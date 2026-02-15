@@ -52,6 +52,9 @@ class SetupWizard(ctk.CTkFrame):
         """Show the welcome screen before questions begin."""
         self._clear_content()
 
+        # Check for saved drafts
+        drafts = self.db.get_wizard_drafts()
+
         # Welcome message
         welcome_card = Card(self.content_frame)
         welcome_card.grid(row=0, column=0, sticky="nsew", pady=20)
@@ -82,10 +85,45 @@ class SetupWizard(ctk.CTkFrame):
         )
         subtitle.grid(row=2, column=0, pady=(0, 30), padx=40)
 
+        next_row = 3
+
+        # Show resume buttons for any saved drafts
+        if drafts:
+            resume_label = ctk.CTkLabel(
+                welcome_card,
+                text="Resume a previous session:",
+                font=FONTS["small"],
+                text_color=COLORS["text_muted"],
+            )
+            resume_label.grid(row=next_row, column=0, pady=(0, 6))
+            next_row += 1
+
+            for draft in drafts:
+                name = draft["name"]
+                answered = len(draft["answers"])
+                total = len(self.questions)
+                btn = StyledButton(
+                    welcome_card,
+                    text=f"Continue for {name} ({answered}/{total})",
+                    command=lambda d=draft: self._resume_draft(d),
+                    style="secondary",
+                    width=280,
+                )
+                btn.grid(row=next_row, column=0, pady=3)
+                next_row += 1
+
+            next_row += 0  # small gap handled by pady below
+
         start_btn = StyledButton(
-            welcome_card, text="Let's Get Started", command=self._start_questions, width=220
+            welcome_card, text="Start Fresh", command=self._start_questions, width=220
         )
-        start_btn.grid(row=3, column=0, pady=(0, 40))
+        start_btn.grid(row=next_row, column=0, pady=(10, 40))
+
+    def _resume_draft(self, draft: dict):
+        """Restore answers from a saved draft and jump to where the user left off."""
+        self.answers = dict(draft["answers"])
+        self.current_index = min(draft["index"], len(self.questions) - 1)
+        self._show_question()
 
     def _start_questions(self):
         self.current_index = 0
@@ -233,11 +271,18 @@ class SetupWizard(ctk.CTkFrame):
         return ""
 
     def _save_current_answer(self):
-        """Save the current answer to memory and optionally skip if empty."""
+        """Save the current answer to memory and persist draft to database."""
         answer = self._get_current_answer()
         q = self.questions[self.current_index]
         if answer:
             self.answers[q["key"]] = answer
+        self._persist_draft()
+
+    def _persist_draft(self):
+        """Write current progress to the database so it survives a crash."""
+        name = self.answers.get("partner_name", "")
+        if name:
+            self.db.save_wizard_draft(name, self.answers, self.current_index)
 
     def _next_question(self):
         self._save_current_answer()
@@ -267,6 +312,9 @@ class SetupWizard(ctk.CTkFrame):
 
         # Initialize reminders
         self.db.init_reminders()
+
+        # Clear the draft now that setup is complete
+        self.db.clear_all_wizard_drafts()
 
         # Show completion screen
         self._show_complete(partner_name)

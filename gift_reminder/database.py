@@ -271,6 +271,42 @@ class Database:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    # --- Wizard Drafts ---
+
+    def save_wizard_draft(self, partner_name: str, answers: dict, current_index: int):
+        """Persist in-progress wizard answers keyed by partner name."""
+        payload = json.dumps({"answers": answers, "index": current_index})
+        self.set_state(f"draft:{partner_name}", payload)
+
+    def get_wizard_drafts(self) -> list[dict]:
+        """Return all saved wizard drafts as [{name, answers, index}, ...]."""
+        rows = self.conn.execute(
+            "SELECT key, value FROM app_state WHERE key LIKE 'draft:%'"
+        ).fetchall()
+        drafts = []
+        for r in rows:
+            name = r["key"][len("draft:"):]
+            data = json.loads(r["value"])
+            drafts.append({"name": name, "answers": data["answers"], "index": data["index"]})
+        return drafts
+
+    def load_wizard_draft(self, partner_name: str) -> dict | None:
+        """Load a specific draft by partner name. Returns {answers, index} or None."""
+        raw = self.get_state(f"draft:{partner_name}")
+        if not raw:
+            return None
+        return json.loads(raw)
+
+    def clear_wizard_draft(self, partner_name: str):
+        """Remove a wizard draft after successful setup completion."""
+        self.conn.execute("DELETE FROM app_state WHERE key = ?", (f"draft:{partner_name}",))
+        self.conn.commit()
+
+    def clear_all_wizard_drafts(self):
+        """Remove all wizard drafts."""
+        self.conn.execute("DELETE FROM app_state WHERE key LIKE 'draft:%'")
+        self.conn.commit()
+
     # --- App State ---
 
     def set_state(self, key: str, value: str):
