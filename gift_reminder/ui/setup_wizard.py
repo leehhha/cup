@@ -224,13 +224,11 @@ class SetupWizard(ctk.CTkFrame):
 
     def _get_current_answer(self) -> str:
         """Extract the answer from the current widget."""
-        q = self.questions[self.current_index]
-
-        if q["type"] == "text":
+        if isinstance(self.answer_widget, StyledTextbox):
             return self.answer_widget.get("1.0", "end-1c").strip()
-        elif q["type"] in ("options", "multi"):
+        elif isinstance(self.answer_widget, OptionSelector):
             return self.answer_widget.get_value()
-        elif q["type"] == "scale":
+        elif isinstance(self.answer_widget, StarRating):
             return str(self.answer_widget.get_value())
         return ""
 
