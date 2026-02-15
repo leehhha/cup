@@ -203,7 +203,7 @@ class StarRating(ctk.CTkFrame):
                 text="\u2605",
                 command=lambda idx=i: self._set_rating(idx + 1),
                 fg_color="transparent",
-                hover_color="transparent",
+                hover_color=COLORS["bg_primary"],
                 text_color=COLORS["star_filled"] if i < initial else COLORS["star_empty"],
                 width=32,
                 height=32,
