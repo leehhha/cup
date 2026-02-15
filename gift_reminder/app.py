@@ -8,6 +8,7 @@ from gift_reminder.ui.components import configure_app_theme
 from gift_reminder.ui.setup_wizard import SetupWizard
 from gift_reminder.ui.dashboard import Dashboard
 from gift_reminder.ui.update_quiz import UpdateQuiz
+from gift_reminder.ui.bonus_quiz import BonusQuiz
 
 
 class GiftReminderApp(ctk.CTk):
@@ -52,8 +53,17 @@ class GiftReminderApp(ctk.CTk):
 
     def _show_dashboard(self):
         self._clear_screen()
-        dashboard = Dashboard(self, self.db, show_update_quiz=self._show_update_quiz)
+        dashboard = Dashboard(
+            self, self.db,
+            show_update_quiz=self._show_update_quiz,
+            show_bonus_quiz=self._show_bonus_quiz,
+        )
         dashboard.grid(row=0, column=0, sticky="nsew")
+
+    def _show_bonus_quiz(self):
+        self._clear_screen()
+        quiz = BonusQuiz(self, self.db, on_complete=self._show_dashboard)
+        quiz.grid(row=0, column=0, sticky="nsew")
 
     def _show_update_quiz(self):
         self._clear_screen()

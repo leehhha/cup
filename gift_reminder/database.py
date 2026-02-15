@@ -107,6 +107,10 @@ class Database:
         rows = self.conn.execute("SELECT * FROM setup_answers ORDER BY id").fetchall()
         return [dict(r) for r in rows]
 
+    def get_answered_question_keys(self) -> set[str]:
+        rows = self.conn.execute("SELECT question_key FROM setup_answers").fetchall()
+        return {r["question_key"] for r in rows}
+
     def get_answers_by_category(self, category: str) -> list[dict]:
         rows = self.conn.execute(
             "SELECT * FROM setup_answers WHERE category = ?", (category,)

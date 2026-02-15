@@ -1,4 +1,4 @@
-"""Setup questions and 6-month update questions."""
+"""Setup questions, bonus questions, and 6-month update questions."""
 
 # Each question has:
 # - key: unique identifier
@@ -6,62 +6,17 @@
 # - category: used for gift matching
 # - type: "options" (select from list), "multi" (multi-select), "text" (free text), "scale" (1-5)
 # - options: list of choices (for options/multi types)
+# - section: display grouping header
 
+# --- Core setup: 10 essential questions for fast onboarding ---
 SETUP_QUESTIONS = [
-    # --- Section 1: Getting to Know Her (4 questions) ---
     {
         "key": "partner_name",
         "text": "What is your wife's first name?",
         "category": "basic",
         "type": "text",
-        "section": "Getting to Know Her",
+        "section": "Getting Started",
     },
-    {
-        "key": "love_language",
-        "text": "Which of these makes her feel most loved?",
-        "category": "love_language",
-        "type": "options",
-        "options": [
-            "Words of Affirmation",
-            "Acts of Service",
-            "Receiving Gifts",
-            "Quality Time",
-            "Physical Touch",
-        ],
-        "section": "Getting to Know Her",
-    },
-    {
-        "key": "personality",
-        "text": "How would you describe her personality?",
-        "category": "personality",
-        "type": "multi",
-        "options": [
-            "Adventurous",
-            "Creative",
-            "Intellectual",
-            "Social",
-            "Homebody",
-            "Practical",
-            "Romantic",
-            "Spontaneous",
-        ],
-        "section": "Getting to Know Her",
-    },
-    {
-        "key": "surprise_comfort",
-        "text": "How does she feel about surprises?",
-        "category": "preferences",
-        "type": "options",
-        "options": [
-            "Loves surprises",
-            "Likes small surprises",
-            "Prefers to know what's coming",
-            "Depends on the situation",
-        ],
-        "section": "Getting to Know Her",
-    },
-
-    # --- Section 2: Interests & Hobbies (2 questions) ---
     {
         "key": "hobbies",
         "text": "What are her main hobbies or interests? (Select all that apply)",
@@ -81,17 +36,8 @@ SETUP_QUESTIONS = [
             "Gardening",
             "Photography",
         ],
-        "section": "Interests & Hobbies",
+        "section": "Her Interests",
     },
-    {
-        "key": "hobby_detail",
-        "text": "What specific hobby or interest is she most passionate about right now?",
-        "category": "interests",
-        "type": "text",
-        "section": "Interests & Hobbies",
-    },
-
-    # --- Section 3: Food & Drink (3 questions) ---
     {
         "key": "food_treats",
         "text": "What treats or indulgences does she love?",
@@ -107,7 +53,7 @@ SETUP_QUESTIONS = [
             "Cheese/Charcuterie",
             "Ice Cream",
         ],
-        "section": "Food & Drink",
+        "section": "Treats & Indulgences",
     },
     {
         "key": "dietary",
@@ -123,24 +69,8 @@ SETUP_QUESTIONS = [
             "Nut allergy",
             "Other allergies",
         ],
-        "section": "Food & Drink",
+        "section": "Treats & Indulgences",
     },
-    {
-        "key": "dining_pref",
-        "text": "What's her ideal dining experience?",
-        "category": "food_pref",
-        "type": "options",
-        "options": [
-            "Fine dining",
-            "Casual & cozy restaurants",
-            "Trendy new spots",
-            "Home-cooked meals",
-            "Takeout & comfort food",
-        ],
-        "section": "Food & Drink",
-    },
-
-    # --- Section 4: Style & Self-Care (5 questions) ---
     {
         "key": "style",
         "text": "How would you describe her personal style?",
@@ -188,30 +118,6 @@ SETUP_QUESTIONS = [
         "section": "Style & Self-Care",
     },
     {
-        "key": "fragrance_pref",
-        "text": "What type of scents/fragrances does she like?",
-        "category": "style",
-        "type": "multi",
-        "options": [
-            "Floral",
-            "Fresh/Clean",
-            "Warm/Vanilla",
-            "Citrus",
-            "Woody/Earthy",
-            "No strong preference",
-        ],
-        "section": "Style & Self-Care",
-    },
-    {
-        "key": "fav_colors",
-        "text": "What colors does she gravitate toward? (clothes, decor, etc.)",
-        "category": "style",
-        "type": "text",
-        "section": "Style & Self-Care",
-    },
-
-    # --- Section 5: Experiences & Sentimental (6 questions) ---
-    {
         "key": "experience_pref",
         "text": "What kind of experiences does she enjoy most?",
         "category": "interests",
@@ -226,8 +132,175 @@ SETUP_QUESTIONS = [
             "Cultural Events",
             "Staycations",
         ],
-        "section": "Experiences & Sentimental",
+        "section": "Gifts & Experiences",
     },
+    {
+        "key": "fav_colors",
+        "text": "What colors does she gravitate toward? (clothes, decor, etc.)",
+        "category": "style",
+        "type": "text",
+        "section": "Gifts & Experiences",
+    },
+    {
+        "key": "dislikes",
+        "text": "Anything she specifically DOESN'T like receiving as gifts?",
+        "category": "dislikes",
+        "type": "text",
+        "section": "Gifts & Experiences",
+    },
+]
+
+# --- Bonus questions: 15 extra questions for engaged users ---
+BONUS_QUESTIONS = [
+    # Deeper personality & preferences
+    {
+        "key": "love_language",
+        "text": "Which of these makes her feel most loved?",
+        "category": "love_language",
+        "type": "options",
+        "options": [
+            "Words of Affirmation",
+            "Acts of Service",
+            "Receiving Gifts",
+            "Quality Time",
+            "Physical Touch",
+        ],
+        "section": "Deeper Personality",
+    },
+    {
+        "key": "personality",
+        "text": "How would you describe her personality?",
+        "category": "personality",
+        "type": "multi",
+        "options": [
+            "Adventurous",
+            "Creative",
+            "Intellectual",
+            "Social",
+            "Homebody",
+            "Practical",
+            "Romantic",
+            "Spontaneous",
+        ],
+        "section": "Deeper Personality",
+    },
+    {
+        "key": "surprise_comfort",
+        "text": "How does she feel about surprises?",
+        "category": "preferences",
+        "type": "options",
+        "options": [
+            "Loves surprises",
+            "Likes small surprises",
+            "Prefers to know what's coming",
+            "Depends on the situation",
+        ],
+        "section": "Deeper Personality",
+    },
+    {
+        "key": "gift_reaction",
+        "text": "When she receives a gift she loves, she typically:",
+        "category": "preferences",
+        "type": "options",
+        "options": [
+            "Gets very emotional and expressive",
+            "Quietly appreciates it deeply",
+            "Immediately wants to use/wear it",
+            "Shares it on social media or tells friends",
+        ],
+        "section": "Deeper Personality",
+    },
+
+    # More about interests
+    {
+        "key": "hobby_detail",
+        "text": "What specific hobby or interest is she most passionate about right now?",
+        "category": "interests",
+        "type": "text",
+        "section": "More About Interests",
+    },
+    {
+        "key": "entertainment",
+        "text": "What does she enjoy for entertainment?",
+        "category": "interests",
+        "type": "multi",
+        "options": [
+            "Movies",
+            "TV Shows",
+            "Podcasts",
+            "Live Music/Concerts",
+            "Theater",
+            "Museums/Galleries",
+            "Board Games",
+            "Video Games",
+        ],
+        "section": "More About Interests",
+    },
+    {
+        "key": "reading_pref",
+        "text": "If she reads, what does she gravitate toward?",
+        "category": "interests",
+        "type": "multi",
+        "options": [
+            "Fiction/Novels",
+            "Non-Fiction",
+            "Self-Help",
+            "Cookbooks",
+            "Magazines",
+            "Poetry",
+            "Doesn't read much",
+        ],
+        "section": "More About Interests",
+    },
+    {
+        "key": "music_taste",
+        "text": "What kind of music does she enjoy?",
+        "category": "interests",
+        "type": "text",
+        "section": "More About Interests",
+    },
+
+    # Food & dining details
+    {
+        "key": "dining_pref",
+        "text": "What's her ideal dining experience?",
+        "category": "food_pref",
+        "type": "options",
+        "options": [
+            "Fine dining",
+            "Casual & cozy restaurants",
+            "Trendy new spots",
+            "Home-cooked meals",
+            "Takeout & comfort food",
+        ],
+        "section": "Food & Dining Details",
+    },
+    {
+        "key": "fav_cuisine",
+        "text": "What are her favorite cuisines? (e.g., Italian, Japanese, Mexican)",
+        "category": "food_pref",
+        "type": "text",
+        "section": "Food & Dining Details",
+    },
+
+    # Style details
+    {
+        "key": "fragrance_pref",
+        "text": "What type of scents/fragrances does she like?",
+        "category": "style",
+        "type": "multi",
+        "options": [
+            "Floral",
+            "Fresh/Clean",
+            "Warm/Vanilla",
+            "Citrus",
+            "Woody/Earthy",
+            "No strong preference",
+        ],
+        "section": "Style Details",
+    },
+
+    # Experiences & sentimental
     {
         "key": "date_night",
         "text": "What's her ideal date night?",
@@ -253,13 +326,6 @@ SETUP_QUESTIONS = [
         "key": "meaningful_gift",
         "text": "What's the most meaningful gift you've ever given her? What made it special?",
         "category": "preferences",
-        "type": "text",
-        "section": "Experiences & Sentimental",
-    },
-    {
-        "key": "dislikes",
-        "text": "Anything she specifically DOESN'T like receiving as gifts?",
-        "category": "dislikes",
         "type": "text",
         "section": "Experiences & Sentimental",
     },

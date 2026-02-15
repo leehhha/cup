@@ -13,16 +13,18 @@ from gift_reminder.ui.components import (
     StarRating,
 )
 from gift_reminder.gift_engine import GiftEngine
+from gift_reminder.data.questions import BONUS_QUESTIONS
 
 
 class Dashboard(ctk.CTkFrame):
     """Main app dashboard showing suggestions, history, and reminders."""
 
-    def __init__(self, master, db, show_update_quiz):
+    def __init__(self, master, db, show_update_quiz, show_bonus_quiz=None):
         super().__init__(master, fg_color=COLORS["bg_primary"])
         self.db = db
         self.engine = GiftEngine(db)
         self.show_update_quiz = show_update_quiz
+        self.show_bonus_quiz = show_bonus_quiz
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -88,6 +90,9 @@ class Dashboard(ctk.CTkFrame):
 
         # --- Upcoming Reminders Section ---
         row = self._build_upcoming_section(row)
+
+        # --- Bonus Questions Section ---
+        row = self._build_bonus_section(row)
 
     def _build_reminder_alerts(self, row: int, reminders: list) -> int:
         """Show active reminder alerts."""
@@ -420,6 +425,44 @@ class Dashboard(ctk.CTkFrame):
             row += 1
 
         return row
+
+    def _build_bonus_section(self, row: int) -> int:
+        """Show a prompt to answer bonus questions if any remain."""
+        if not self.show_bonus_quiz:
+            return row
+
+        answered_keys = self.db.get_answered_question_keys()
+        remaining = [q for q in BONUS_QUESTIONS if q["key"] not in answered_keys]
+        if not remaining:
+            return row
+
+        section_label = SectionTitle(self.scroll, text="Improve Your Suggestions")
+        section_label.grid(row=row, column=0, sticky="w", pady=(20, 4))
+        row += 1
+
+        card = Card(self.scroll)
+        card.grid(row=row, column=0, sticky="ew", pady=4)
+        card.grid_columnconfigure(1, weight=1)
+
+        icon = ctk.CTkLabel(card, text="\U0001f4a1", font=("Arial", 24), width=40)
+        icon.grid(row=0, column=0, padx=(16, 4), pady=12)
+
+        count = len(remaining)
+        msg = ctk.CTkLabel(
+            card,
+            text=f"{count} more question{'s' if count != 1 else ''} available to fine-tune gift suggestions",
+            font=FONTS["body"],
+            text_color=COLORS["text_primary"],
+            anchor="w",
+        )
+        msg.grid(row=0, column=1, sticky="w", padx=4, pady=12)
+
+        btn = StyledButton(
+            card, text="Answer Now", command=self.show_bonus_quiz, style="secondary", width=120
+        )
+        btn.grid(row=0, column=2, padx=12, pady=12)
+
+        return row + 1
 
     # --- Actions ---
 
