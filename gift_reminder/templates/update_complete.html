@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="welcome-screen">
+    <div class="card welcome-card">
+        <div class="icon">&#10024;</div>
+        <h2>Check-In Complete!</h2>
+        <p>
+            Thanks for the update! Your gift suggestions
+            will now be even more tailored.<br><br>
+            See you in 6 months for the next check-in.
+        </p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

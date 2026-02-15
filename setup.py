@@ -9,10 +9,12 @@ setup(
     install_requires=[
         "customtkinter>=5.2.0",
         "Pillow>=10.0.0",
+        "Flask>=3.0.0",
     ],
     entry_points={
         "console_scripts": [
             "gift-reminder=gift_reminder.app:main",
+            "gift-reminder-web=gift_reminder.webapp:main",
         ],
     },
 )

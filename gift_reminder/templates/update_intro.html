@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="welcome-screen">
+    <div class="card welcome-card">
+        <div class="icon">&#128260;</div>
+        <h2>6-Month Check-In</h2>
+        <p>
+            Time for a quick update! Just 5 questions
+            to help me give you better gift suggestions.<br><br>
+            This helps keep recommendations fresh and relevant.
+        </p>
+        <a href="{{ url_for('update_question', index=0) }}" class="btn btn-primary btn-lg">Start Check-In</a>
+    </div>
+</div>
+{% endblock %}

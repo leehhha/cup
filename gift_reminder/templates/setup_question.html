@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container">
+    <!-- Progress -->
+    <div class="progress-bar-wrap">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" style="width: {{ ((index + 1) / total * 100) | int }}%"></div>
+        </div>
+        <div class="progress-text">{{ ((index + 1) / total * 100) | int }}% complete</div>
+    </div>
+
+    <div class="question-screen">
+        <div class="question-section">{{ question.section }}</div>
+        <div class="question-number">Question {{ index + 1 }} of {{ total }}</div>
+        <div class="question-text">{{ question.text }}</div>
+
+        <form method="POST" action="{{ url_for('setup_question', index=index) }}">
+            {% if question.type == 'text' %}
+                <textarea name="answer" rows="4" placeholder="Type your answer..." autofocus>{{ current_answer }}</textarea>
+
+            {% elif question.type == 'options' %}
+                <div class="option-grid" id="option-grid">
+                    {% for opt in question.options %}
+                        <button type="button" class="option-btn {% if current_answer == opt %}selected{% endif %}"
+                                onclick="selectSingle(this, '{{ opt }}')">
+                            {{ opt }}
+                        </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="answer" id="answer-hidden" value="{{ current_answer }}">
+
+            {% elif question.type == 'multi' %}
+                <div class="option-grid" id="option-grid">
+                    {% for opt in question.options %}
+                        <button type="button" class="option-btn {% if opt in selected_list %}selected{% endif %}"
+                                onclick="toggleMulti(this, '{{ opt }}')">
+                            {{ opt }}
+                        </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="answer" id="answer-hidden" value="{{ current_answer }}">
+
+            {% elif question.type == 'scale' %}
+                <div class="scale-widget">
+                    <span class="scale-label">Not very important</span>
+                    <div class="star-rating">
+                        {% for i in range(5, 0, -1) %}
+                            <input type="radio" name="answer" id="star{{ i }}" value="{{ i }}"
+                                   {% if current_answer | int == i %}checked{% endif %}>
+                            <label for="star{{ i }}">&#9733;</label>
+                        {% endfor %}
+                    </div>
+                    <span class="scale-label">Extremely important</span>
+                </div>
+            {% endif %}
+
+            <div class="question-nav">
+                <div>
+                    {% if index > 0 %}
+                        <a href="{{ url_for('setup_question', index=index - 1) }}" class="btn btn-ghost">Back</a>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    {% if index == total - 1 %}Finish Setup{% else %}Next{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectSingle(btn, value) {
+    document.querySelectorAll('#option-grid .option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('answer-hidden').value = value;
+}
+
+function toggleMulti(btn, value) {
+    btn.classList.toggle('selected');
+    const selected = Array.from(document.querySelectorAll('#option-grid .option-btn.selected'))
+        .map(b => b.textContent.trim());
+    document.getElementById('answer-hidden').value = selected.join(', ');
+}
+</script>
+{% endblock %}

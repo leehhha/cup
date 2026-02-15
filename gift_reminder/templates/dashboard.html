@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block body %}
+<!-- Header -->
+<div class="header">
+    <div class="container">
+        <h1>&#127873; Gifts for {{ partner_name }}</h1>
+        <div class="header-actions">
+            {% if update_due %}
+                <a href="{{ url_for('update_intro') }}" class="btn btn-warning btn-sm">6-Month Check-In Due!</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- Active Reminders -->
+    {% for r in active_reminders %}
+        <div class="alert alert-warning">
+            <div class="alert-icon">
+                {% if r.reminder_type == 'monthly' %}&#128144;{% else %}&#10024;{% endif %}
+            </div>
+            <div class="alert-body">
+                <h3>
+                    {% if r.reminder_type == 'monthly' %}Monthly Gift Reminder
+                    {% else %}Quarterly Surprise Time!{% endif %}
+                </h3>
+                <p>
+                    {% if r.reminder_type == 'monthly' %}Time for a small, thoughtful gift! Check the suggestions below.
+                    {% else %}It's time for a special surprise gift. See ideas below.{% endif %}
+                </p>
+            </div>
+            <a href="{{ url_for('dismiss_reminder', reminder_id=r.id) }}" class="btn btn-ghost btn-sm">Dismiss</a>
+        </div>
+    {% endfor %}
+
+    <!-- Monthly Suggestions -->
+    <h2 class="section-title">Gift Ideas for This Month</h2>
+    <p class="section-subtitle">Personalized picks based on what she loves</p>
+
+    {% for gift in monthly_gifts %}
+        <div class="gift-card">
+            <div class="effort">
+                {% if gift.effort == 1 %}&#9889; Easy{% else %}&#128077; Simple{% endif %}
+            </div>
+            <div class="gift-info">
+                <div class="gift-name">{{ gift.name }}</div>
+                <div class="gift-tags">{{ gift.tags[:3] | join(' &bull; ') }}</div>
+            </div>
+            <div class="gift-action">
+                <a href="{{ url_for('log_suggestion', name=gift.name, gift_type='monthly') }}"
+                   class="btn btn-secondary btn-sm">Log as Given</a>
+            </div>
+        </div>
+    {% endfor %}
+
+    <!-- Quarterly Suggestions -->
+    <h2 class="section-title">Surprise Gift Ideas</h2>
+    <p class="section-subtitle">Bigger gestures for quarterly surprises</p>
+
+    {% for gift in quarterly_gifts %}
+        <div class="gift-card">
+            <div class="effort">
+                {% if gift.effort == 1 %}&#9889; Easy{% else %}&#128077; Simple{% endif %}
+            </div>
+            <div class="gift-info">
+                <div class="gift-name">{{ gift.name }}</div>
+                <div class="gift-tags">{{ gift.tags[:3] | join(' &bull; ') }}</div>
+            </div>
+            <div class="gift-action">
+                <a href="{{ url_for('log_suggestion', name=gift.name, gift_type='quarterly') }}"
+                   class="btn btn-secondary btn-sm">Log as Given</a>
+            </div>
+        </div>
+    {% endfor %}
+
+    <div class="text-center mt-2 mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&#8635; Refresh Suggestions</a>
+    </div>
+
+    <!-- Log a Gift -->
+    <h2 class="section-title">Log a Gift</h2>
+    <p class="section-subtitle">Record a gift you gave (from suggestions or your own idea)</p>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('log_gift') }}" class="log-form">
+            <div class="form-row">
+                <label>Gift</label>
+                <input type="text" name="gift_name" placeholder="What did you give?" required>
+            </div>
+
+            <div class="form-row">
+                <label>Type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="gift_type" value="monthly" checked> Monthly
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="gift_type" value="quarterly"> Quarterly
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Rating</label>
+                <div class="star-rating">
+                    {% for i in range(5, 0, -1) %}
+                        <input type="radio" name="rating" id="log-star{{ i }}" value="{{ i }}">
+                        <label for="log-star{{ i }}">&#9733;</label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>Notes</label>
+                <textarea name="notes" rows="2" placeholder="How did she react? Any notes..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <label></label>
+                <div><button type="submit" class="btn btn-primary">Save Gift</button></div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Gift History -->
+    <h2 class="section-title">Gift History</h2>
+
+    {% if gifts %}
+        {% for gift in gifts %}
+            <div class="history-card">
+                <div class="date">{{ gift.date_display }}</div>
+                <div class="name">{{ gift.gift_name }}</div>
+                <span class="badge badge-{{ gift.gift_type }}">{{ gift.gift_type }}</span>
+                {% if gift.rating %}
+                    <div class="star-display">
+                        {{ '★' * gift.rating }}{{ '☆' * (5 - gift.rating) }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted mt-1">No gifts logged yet. Start by giving a gift from the suggestions above!</p>
+    {% endif %}
+
+    <!-- Upcoming Reminders -->
+    <h2 class="section-title">Upcoming Reminders</h2>
+
+    {% for r in reminders %}
+        <div class="reminder-row">
+            <div class="reminder-icon">
+                {% if r.reminder_type == 'monthly' %}&#128144;
+                {% elif r.reminder_type == 'quarterly' %}&#10024;
+                {% else %}&#128260;{% endif %}
+            </div>
+            <div class="reminder-name">
+                {% if r.reminder_type == 'monthly' %}Monthly Gift
+                {% elif r.reminder_type == 'quarterly' %}Quarterly Surprise
+                {% else %}6-Month Check-In{% endif %}
+            </div>
+            <div class="reminder-date {{ r.due_class }}">{{ r.due_display }}</div>
+        </div>
+    {% endfor %}
+
+    <div style="height: 40px"></div>
+</div>
+{% endblock %}

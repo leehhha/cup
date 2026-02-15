@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container">
+    <!-- Progress -->
+    <div class="progress-bar-wrap">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" style="width: {{ ((index + 1) / total * 100) | int }}%"></div>
+        </div>
+        <div class="progress-text">{{ ((index + 1) / total * 100) | int }}% complete</div>
+    </div>
+
+    <div class="question-screen">
+        <div class="question-section">6-Month Check-In</div>
+        <div class="question-number">Question {{ index + 1 }} of {{ total }}</div>
+        <div class="question-text">{{ question.text }}</div>
+
+        <form method="POST" action="{{ url_for('update_question', index=index) }}">
+            <textarea name="answer" rows="5" placeholder="Type your answer..." autofocus>{{ current_answer }}</textarea>
+
+            <div class="question-nav">
+                <div>
+                    {% if index > 0 %}
+                        <a href="{{ url_for('update_question', index=index - 1) }}" class="btn btn-ghost">Back</a>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    {% if index == total - 1 %}Complete{% else %}Next{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
