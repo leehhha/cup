@@ -1,4 +1,4 @@
-"""Setup wizard - walks user through initial 25 questions about their partner."""
+"""Setup wizard - walks user through initial 20 questions about their partner."""
 
 import customtkinter as ctk
 from gift_reminder.ui.theme import COLORS, FONTS, LAYOUT
@@ -76,7 +76,7 @@ class SetupWizard(ctk.CTkFrame):
         subtitle = ctk.CTkLabel(
             welcome_card,
             text="Let's set up your personalized gift assistant.\n\n"
-            "I'll ask you 25 quick questions about your wife\n"
+            "I'll ask you 20 quick questions about your wife\n"
             "to help suggest thoughtful gifts throughout the year.\n\n"
             "This should only take a few minutes.",
             font=FONTS["body"],

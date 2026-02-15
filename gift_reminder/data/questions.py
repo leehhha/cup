@@ -8,7 +8,7 @@
 # - options: list of choices (for options/multi types)
 
 SETUP_QUESTIONS = [
-    # --- Section 1: Getting to Know Her (5 questions) ---
+    # --- Section 1: Getting to Know Her (4 questions) ---
     {
         "key": "partner_name",
         "text": "What is your wife's first name?",
@@ -60,21 +60,8 @@ SETUP_QUESTIONS = [
         ],
         "section": "Getting to Know Her",
     },
-    {
-        "key": "gift_reaction",
-        "text": "When she receives a gift she loves, she typically:",
-        "category": "preferences",
-        "type": "options",
-        "options": [
-            "Gets very emotional and expressive",
-            "Quietly appreciates it deeply",
-            "Immediately wants to use/wear it",
-            "Shares it on social media or tells friends",
-        ],
-        "section": "Getting to Know Her",
-    },
 
-    # --- Section 2: Interests & Hobbies (5 questions) ---
+    # --- Section 2: Interests & Hobbies (2 questions) ---
     {
         "key": "hobbies",
         "text": "What are her main hobbies or interests? (Select all that apply)",
@@ -103,48 +90,8 @@ SETUP_QUESTIONS = [
         "type": "text",
         "section": "Interests & Hobbies",
     },
-    {
-        "key": "entertainment",
-        "text": "What does she enjoy for entertainment?",
-        "category": "interests",
-        "type": "multi",
-        "options": [
-            "Movies",
-            "TV Shows",
-            "Podcasts",
-            "Live Music/Concerts",
-            "Theater",
-            "Museums/Galleries",
-            "Board Games",
-            "Video Games",
-        ],
-        "section": "Interests & Hobbies",
-    },
-    {
-        "key": "reading_pref",
-        "text": "If she reads, what does she gravitate toward?",
-        "category": "interests",
-        "type": "multi",
-        "options": [
-            "Fiction/Novels",
-            "Non-Fiction",
-            "Self-Help",
-            "Cookbooks",
-            "Magazines",
-            "Poetry",
-            "Doesn't read much",
-        ],
-        "section": "Interests & Hobbies",
-    },
-    {
-        "key": "music_taste",
-        "text": "What kind of music does she enjoy?",
-        "category": "interests",
-        "type": "text",
-        "section": "Interests & Hobbies",
-    },
 
-    # --- Section 3: Food & Drink (4 questions) ---
+    # --- Section 3: Food & Drink (3 questions) ---
     {
         "key": "food_treats",
         "text": "What treats or indulgences does she love?",
@@ -190,13 +137,6 @@ SETUP_QUESTIONS = [
             "Home-cooked meals",
             "Takeout & comfort food",
         ],
-        "section": "Food & Drink",
-    },
-    {
-        "key": "fav_cuisine",
-        "text": "What are her favorite cuisines? (e.g., Italian, Japanese, Mexican)",
-        "category": "food_pref",
-        "type": "text",
         "section": "Food & Drink",
     },
 
