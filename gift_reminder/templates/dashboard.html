@@ -69,6 +69,10 @@
         <div class="swipe-celebration" id="celebration" style="display:none">
             <div class="celebration-icon">&#127873;</div>
             <div class="celebration-text">Gift Logged!</div>
+            <a id="celebration-buy" class="btn-buy-now" href="#" target="_blank" rel="noopener">
+                Buy on Amazon &#8594;
+            </a>
+            <button class="btn-continue" id="celebration-continue">Next Card</button>
         </div>
     </div>
 
@@ -188,6 +192,8 @@
     var deckInner = document.getElementById('deck-inner');
     var deckEmpty = document.getElementById('deck-empty');
     var celebration = document.getElementById('celebration');
+    var celebrationBuy = document.getElementById('celebration-buy');
+    var celebrationContinue = document.getElementById('celebration-continue');
     var counter = document.getElementById('card-counter');
     var actions = document.getElementById('swipe-actions');
     var stampSkip = document.getElementById('stamp-skip');
@@ -198,6 +204,12 @@
     // Touch / drag state
     var startX = 0, startY = 0, currentX = 0, dragging = false, cardEl = null;
     var THRESHOLD = 80;
+
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
 
     function renderCard() {
         deckInner.innerHTML = '';
@@ -213,15 +225,23 @@
         var gift = CARDS[currentIndex];
         var effortLabel = gift.effort <= 1 ? '\u26A1 Easy' : '\uD83D\uDC4D Moderate';
         var typeLabel = gift.gift_type === 'quarterly' ? 'Quarterly Surprise' : 'Monthly';
-        var tagStr = (gift.tags || []).join(' \u2022 ');
+        var tagStr = escHtml((gift.tags || []).join(' \u2022 '));
+        var priceHtml = gift.price
+            ? '<div class="swipe-card-price">\uD83D\uDCB0 ' + escHtml(gift.price) + '</div>'
+            : '';
 
         var card = document.createElement('div');
         card.className = 'swipe-card';
         card.innerHTML =
-            '<div class="swipe-card-type">' + typeLabel + '</div>' +
-            '<div class="swipe-card-name">' + gift.name + '</div>' +
+            '<div class="swipe-card-type">' + escHtml(typeLabel) + '</div>' +
+            '<div class="swipe-card-name">' + escHtml(gift.name) + '</div>' +
+            priceHtml +
             '<div class="swipe-card-tags">' + tagStr + '</div>' +
-            '<div class="swipe-card-effort">' + effortLabel + '</div>';
+            '<div class="swipe-card-meta">' +
+                '<span class="swipe-card-effort">' + effortLabel + '</span>' +
+                '<a class="swipe-card-buy" href="' + escHtml(gift.buy_url) + '" target="_blank" rel="noopener"' +
+                    ' onclick="event.stopPropagation()">Buy on ' + escHtml(gift.buy_channel) + ' \u2192</a>' +
+            '</div>';
 
         deckInner.appendChild(card);
         cardEl = card;
@@ -253,6 +273,12 @@
         });
     }
 
+    function advanceAfterPick() {
+        celebration.style.display = 'none';
+        currentIndex++;
+        renderCard();
+    }
+
     function doPick() {
         var gift = CARDS[currentIndex];
         // Log via API
@@ -263,15 +289,15 @@
         });
 
         animateOut('right', function() {
-            // Show celebration
+            // Populate and show celebration with Buy Now
+            celebrationBuy.href = gift.buy_url;
+            celebrationBuy.textContent = 'Buy on ' + gift.buy_channel + ' \u2192';
             celebration.style.display = 'flex';
-            setTimeout(function() {
-                celebration.style.display = 'none';
-                currentIndex++;
-                renderCard();
-            }, 1200);
         });
     }
+
+    // Continue from celebration overlay
+    celebrationContinue.addEventListener('click', advanceAfterPick);
 
     // --- Button handlers ---
     btnSkip.addEventListener('click', doSkip);

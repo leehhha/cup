@@ -4,6 +4,7 @@ import json
 import os
 import secrets
 from datetime import date, datetime
+from urllib.parse import quote_plus
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 
@@ -91,20 +92,22 @@ def create_app(db_path=None):
 
         # Build a combined card deck for the swipe UI
         card_deck = []
-        for g in monthly_gifts:
-            card_deck.append({
-                "name": g["name"],
-                "tags": g.get("tags", [])[:3],
-                "effort": g.get("effort", 1),
-                "gift_type": "monthly",
-            })
-        for g in quarterly_gifts:
-            card_deck.append({
-                "name": g["name"],
-                "tags": g.get("tags", [])[:3],
-                "effort": g.get("effort", 2),
-                "gift_type": "quarterly",
-            })
+        for gift_type, gifts_list in [("monthly", monthly_gifts), ("quarterly", quarterly_gifts)]:
+            for g in gifts_list:
+                query = g.get("buy_query") or g["name"]
+                if g.get("buy_url"):
+                    buy_url = g["buy_url"]
+                else:
+                    buy_url = "https://www.amazon.com/s?k=" + quote_plus(query)
+                card_deck.append({
+                    "name": g["name"],
+                    "tags": g.get("tags", [])[:3],
+                    "effort": g.get("effort", 1),
+                    "gift_type": gift_type,
+                    "price": g.get("price", ""),
+                    "buy_url": buy_url,
+                    "buy_channel": g.get("buy_channel", "Amazon"),
+                })
         card_deck_json = json.dumps(card_deck)
 
         gifts = db.get_recent_gifts(10)
