@@ -17,7 +17,7 @@ def get_db_path() -> Path:
 class Database:
     def __init__(self, db_path: str | None = None):
         self.db_path = db_path or str(get_db_path())
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self._create_tables()
 
