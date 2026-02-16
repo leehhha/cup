@@ -7,12 +7,13 @@
         <h2>You're All Set!</h2>
         <p>
             Great! I now have a good understanding of what
-            {{ partner_name }} would love. Here's what happens next:<br><br>
-            &#8226; Monthly reminders for small, thoughtful gifts<br>
-            &#8226; Quarterly surprise gift suggestions<br>
-            &#8226; Check-ins every 6 months to keep improving<br><br>
-            Head to your dashboard to see your first suggestions!
+            {{ partner_name }} would love.
         </p>
+        <ul class="checklist">
+            <li>&#128144; Monthly reminders for small, thoughtful gifts</li>
+            <li>&#10024; Quarterly surprise gift suggestions</li>
+            <li>&#128260; Check-ins every 6 months to keep improving</li>
+        </ul>
         <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Go to Dashboard</a>
     </div>
 </div>

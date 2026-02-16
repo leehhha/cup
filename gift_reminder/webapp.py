@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
-from gift_reminder.data.questions import SETUP_QUESTIONS, UPDATE_QUESTIONS
+from gift_reminder.data.questions import BONUS_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
 from gift_reminder.database import Database
 from gift_reminder.gift_engine import GiftEngine
 
@@ -115,6 +115,10 @@ def create_app(db_path=None):
                 r["due_display"] = r["next_due"]
                 r["due_class"] = "due-later"
 
+        # Bonus questions remaining
+        answered_keys = db.get_answered_question_keys()
+        bonus_remaining = len([q for q in BONUS_QUESTIONS if q["key"] not in answered_keys])
+
         return render_template(
             "dashboard.html",
             partner_name=partner_name,
@@ -124,6 +128,7 @@ def create_app(db_path=None):
             quarterly_gifts=quarterly_gifts,
             gifts=gifts,
             reminders=reminders,
+            bonus_remaining=bonus_remaining,
         )
 
     # ------------------------------------------------------------------
@@ -169,6 +174,69 @@ def create_app(db_path=None):
     @app.route("/dismiss/<int:reminder_id>")
     def dismiss_reminder(reminder_id):
         db.advance_reminder(reminder_id)
+        return redirect(url_for("dashboard"))
+
+    # ------------------------------------------------------------------
+    # Bonus questions
+    # ------------------------------------------------------------------
+    @app.route("/bonus")
+    def bonus_intro():
+        answered_keys = db.get_answered_question_keys()
+        unanswered = [q for q in BONUS_QUESTIONS if q["key"] not in answered_keys]
+        if not unanswered:
+            flash("You've answered all bonus questions!", "success")
+            return redirect(url_for("dashboard"))
+        return render_template("bonus_intro.html", total=len(unanswered))
+
+    @app.route("/bonus/<int:index>", methods=["GET", "POST"])
+    def bonus_question(index):
+        answered_keys = db.get_answered_question_keys()
+        unanswered = [q for q in BONUS_QUESTIONS if q["key"] not in answered_keys]
+        total = len(unanswered)
+
+        if total == 0:
+            return redirect(url_for("dashboard"))
+        if index < 0 or index >= total:
+            return redirect(url_for("bonus_intro"))
+
+        question = unanswered[index]
+        answers = session.get("bonus_answers", {})
+
+        if request.method == "POST":
+            answer = request.form.get("answer", "").strip()
+            if answer:
+                answers[question["key"]] = answer
+                session["bonus_answers"] = answers
+
+            # Last question -> finish
+            if index == total - 1:
+                return _finish_bonus(db, unanswered, answers)
+
+            return redirect(url_for("bonus_question", index=index + 1))
+
+        # GET
+        current_answer = answers.get(question["key"], "")
+        selected_list = [s.strip() for s in current_answer.split(",")] if current_answer else []
+
+        return render_template(
+            "bonus_question.html",
+            question=question,
+            index=index,
+            total=total,
+            current_answer=current_answer,
+            selected_list=selected_list,
+        )
+
+    @app.route("/bonus/save-exit")
+    def bonus_save_exit():
+        answers = session.get("bonus_answers", {})
+        answered_keys = db.get_answered_question_keys()
+        unanswered = [q for q in BONUS_QUESTIONS if q["key"] not in answered_keys]
+        _persist_bonus_answers(db, unanswered, answers)
+        session.pop("bonus_answers", None)
+        count = len(answers)
+        if count:
+            flash(f"Saved {count} answer{'s' if count != 1 else ''}!", "success")
         return redirect(url_for("dashboard"))
 
     # ------------------------------------------------------------------
@@ -233,6 +301,21 @@ def _finish_setup(db, answers):
     return render_template("setup_complete.html", partner_name=partner_name)
 
 
+def _persist_bonus_answers(db, questions, answers):
+    """Save any answered bonus questions to the database."""
+    for q in questions:
+        answer = answers.get(q["key"], "")
+        if answer:
+            db.save_setup_answer(q["key"], q["text"], answer, q["category"])
+
+
+def _finish_bonus(db, questions, answers):
+    _persist_bonus_answers(db, questions, answers)
+    answered_count = len([a for a in answers.values() if a])
+    session.pop("bonus_answers", None)
+    return render_template("bonus_complete.html", answered=answered_count)
+
+
 def _finish_update(db, answers):
     for q in UPDATE_QUESTIONS:
         answer = answers.get(q["key"], "")
@@ -251,8 +334,8 @@ def _finish_update(db, answers):
 
 def main():
     app = create_app()
-    print("\n  ✨ Gift Reminder is running at http://localhost:5000\n")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    print("\n  Gift Reminder is running at http://localhost:5000\n")
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 
 if __name__ == "__main__":

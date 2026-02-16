@@ -7,7 +7,7 @@
         <h1>&#127873; Gifts for {{ partner_name }}</h1>
         <div class="header-actions">
             {% if update_due %}
-                <a href="{{ url_for('update_intro') }}" class="btn btn-warning btn-sm">6-Month Check-In Due!</a>
+                <a href="{{ url_for('update_intro') }}" class="btn btn-warning btn-sm">Check-In Due!</a>
             {% endif %}
         </div>
     </div>
@@ -34,11 +34,13 @@
                     {% else %}Quarterly Surprise Time!{% endif %}
                 </h3>
                 <p>
-                    {% if r.reminder_type == 'monthly' %}Time for a small, thoughtful gift! Check the suggestions below.
-                    {% else %}It's time for a special surprise gift. See ideas below.{% endif %}
+                    {% if r.reminder_type == 'monthly' %}Time for a small, thoughtful gift!
+                    {% else %}It's time for a special surprise gift.{% endif %}
                 </p>
             </div>
-            <a href="{{ url_for('dismiss_reminder', reminder_id=r.id) }}" class="btn btn-ghost btn-sm">Dismiss</a>
+            <div class="alert-actions">
+                <a href="{{ url_for('dismiss_reminder', reminder_id=r.id) }}" class="btn btn-ghost btn-sm">Dismiss</a>
+            </div>
         </div>
     {% endfor %}
 
@@ -83,12 +85,12 @@
     {% endfor %}
 
     <div class="text-center mt-2 mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&#8635; Refresh Suggestions</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block-mobile">&#8635; Refresh Suggestions</a>
     </div>
 
     <!-- Log a Gift -->
     <h2 class="section-title">Log a Gift</h2>
-    <p class="section-subtitle">Record a gift you gave (from suggestions or your own idea)</p>
+    <p class="section-subtitle">Record a gift you gave</p>
 
     <div class="card">
         <form method="POST" action="{{ url_for('log_gift') }}" class="log-form">
@@ -121,12 +123,11 @@
 
             <div class="form-row">
                 <label>Notes</label>
-                <textarea name="notes" rows="2" placeholder="How did she react? Any notes..."></textarea>
+                <textarea name="notes" rows="2" placeholder="How did she react?"></textarea>
             </div>
 
-            <div class="form-row">
-                <label></label>
-                <div><button type="submit" class="btn btn-primary">Save Gift</button></div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-block-mobile">Save Gift</button>
             </div>
         </form>
     </div>
@@ -142,7 +143,7 @@
                 <span class="badge badge-{{ gift.gift_type }}">{{ gift.gift_type }}</span>
                 {% if gift.rating %}
                     <div class="star-display">
-                        {{ '★' * gift.rating }}{{ '☆' * (5 - gift.rating) }}
+                        {{ '&#9733;' * gift.rating }}{{ '&#9734;' * (5 - gift.rating) }}
                     </div>
                 {% endif %}
             </div>
@@ -170,6 +171,20 @@
         </div>
     {% endfor %}
 
-    <div style="height: 40px"></div>
+    <!-- Bonus Questions CTA -->
+    {% if bonus_remaining > 0 %}
+        <h2 class="section-title">Improve Your Suggestions</h2>
+        <div class="bonus-cta">
+            <div class="bonus-cta-content">
+                <div class="bonus-cta-icon">&#128161;</div>
+                <div class="bonus-cta-text">
+                    {{ bonus_remaining }} more question{{ 's' if bonus_remaining != 1 }} to fine-tune gift suggestions
+                </div>
+            </div>
+            <a href="{{ url_for('bonus_intro') }}" class="btn btn-secondary">Answer Now</a>
+        </div>
+    {% endif %}
+
+    <div style="height: 32px"></div>
 </div>
 {% endblock %}
