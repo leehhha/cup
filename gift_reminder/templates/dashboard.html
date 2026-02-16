@@ -44,48 +44,39 @@
         </div>
     {% endfor %}
 
-    <!-- Monthly Suggestions -->
-    <h2 class="section-title">Gift Ideas for This Month</h2>
-    <p class="section-subtitle">Personalized picks based on what she loves</p>
+    <!-- Swipe Card Deck -->
+    <h2 class="section-title">Gift Ideas</h2>
+    <p class="section-subtitle">Swipe through personalized picks</p>
 
-    {% for gift in monthly_gifts %}
-        <div class="gift-card">
-            <div class="effort">
-                {% if gift.effort == 1 %}&#9889; Easy{% else %}&#128077; Simple{% endif %}
-            </div>
-            <div class="gift-info">
-                <div class="gift-name">{{ gift.name }}</div>
-                <div class="gift-tags">{{ gift.tags[:3] | join(' &bull; ') }}</div>
-            </div>
-            <div class="gift-action">
-                <a href="{{ url_for('log_suggestion', name=gift.name, gift_type='monthly') }}"
-                   class="btn btn-secondary btn-sm">Log as Given</a>
-            </div>
+    <div id="card-deck" class="swipe-deck">
+        <div class="swipe-deck-inner" id="deck-inner">
+            <!-- Cards injected by JS -->
         </div>
-    {% endfor %}
 
-    <!-- Quarterly Suggestions -->
-    <h2 class="section-title">Surprise Gift Ideas</h2>
-    <p class="section-subtitle">Bigger gestures for quarterly surprises</p>
+        <!-- Stamp overlays that appear during swipe -->
+        <div class="swipe-stamp swipe-stamp-skip" id="stamp-skip">SKIP</div>
+        <div class="swipe-stamp swipe-stamp-pick" id="stamp-pick">PICK</div>
 
-    {% for gift in quarterly_gifts %}
-        <div class="gift-card">
-            <div class="effort">
-                {% if gift.effort == 1 %}&#9889; Easy{% else %}&#128077; Simple{% endif %}
-            </div>
-            <div class="gift-info">
-                <div class="gift-name">{{ gift.name }}</div>
-                <div class="gift-tags">{{ gift.tags[:3] | join(' &bull; ') }}</div>
-            </div>
-            <div class="gift-action">
-                <a href="{{ url_for('log_suggestion', name=gift.name, gift_type='quarterly') }}"
-                   class="btn btn-secondary btn-sm">Log as Given</a>
-            </div>
+        <!-- Empty state -->
+        <div class="swipe-empty" id="deck-empty" style="display:none">
+            <div class="swipe-empty-icon">&#127881;</div>
+            <h3>All caught up!</h3>
+            <p>You've reviewed all suggestions.</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary mt-2">&#8635; Get New Ideas</a>
         </div>
-    {% endfor %}
 
-    <div class="text-center mt-2 mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block-mobile">&#8635; Refresh Suggestions</a>
+        <!-- Celebration overlay -->
+        <div class="swipe-celebration" id="celebration" style="display:none">
+            <div class="celebration-icon">&#127873;</div>
+            <div class="celebration-text">Gift Logged!</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="swipe-actions" id="swipe-actions">
+        <button class="swipe-btn swipe-btn-skip" id="btn-skip" aria-label="Skip">&#10060;</button>
+        <div class="swipe-counter" id="card-counter">1 of 8</div>
+        <button class="swipe-btn swipe-btn-pick" id="btn-pick" aria-label="Select">&#10084;&#65039;</button>
     </div>
 
     <!-- Log a Gift -->
@@ -187,4 +178,213 @@
 
     <div style="height: 32px"></div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var CARDS = {{ card_deck_json|safe }};
+    var currentIndex = 0;
+    var deckInner = document.getElementById('deck-inner');
+    var deckEmpty = document.getElementById('deck-empty');
+    var celebration = document.getElementById('celebration');
+    var counter = document.getElementById('card-counter');
+    var actions = document.getElementById('swipe-actions');
+    var stampSkip = document.getElementById('stamp-skip');
+    var stampPick = document.getElementById('stamp-pick');
+    var btnSkip = document.getElementById('btn-skip');
+    var btnPick = document.getElementById('btn-pick');
+
+    // Touch / drag state
+    var startX = 0, startY = 0, currentX = 0, dragging = false, cardEl = null;
+    var THRESHOLD = 80;
+
+    function renderCard() {
+        deckInner.innerHTML = '';
+        stampSkip.style.opacity = '0';
+        stampPick.style.opacity = '0';
+
+        if (currentIndex >= CARDS.length) {
+            deckEmpty.style.display = 'flex';
+            actions.style.display = 'none';
+            return;
+        }
+
+        var gift = CARDS[currentIndex];
+        var effortLabel = gift.effort <= 1 ? '\u26A1 Easy' : '\uD83D\uDC4D Moderate';
+        var typeLabel = gift.gift_type === 'quarterly' ? 'Quarterly Surprise' : 'Monthly';
+        var tagStr = (gift.tags || []).join(' \u2022 ');
+
+        var card = document.createElement('div');
+        card.className = 'swipe-card';
+        card.innerHTML =
+            '<div class="swipe-card-type">' + typeLabel + '</div>' +
+            '<div class="swipe-card-name">' + gift.name + '</div>' +
+            '<div class="swipe-card-tags">' + tagStr + '</div>' +
+            '<div class="swipe-card-effort">' + effortLabel + '</div>';
+
+        deckInner.appendChild(card);
+        cardEl = card;
+
+        counter.textContent = (currentIndex + 1) + ' of ' + CARDS.length;
+
+        // Attach touch listeners to the card
+        card.addEventListener('touchstart', onTouchStart, {passive: true});
+        card.addEventListener('touchmove', onTouchMove, {passive: false});
+        card.addEventListener('touchend', onTouchEnd);
+        card.addEventListener('mousedown', onMouseDown);
+    }
+
+    function animateOut(direction, callback) {
+        if (!cardEl) return callback && callback();
+        var card = cardEl;
+        var xTarget = direction === 'left' ? -400 : 400;
+        var rotate = direction === 'left' ? -20 : 20;
+        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        card.style.transform = 'translateX(' + xTarget + 'px) rotate(' + rotate + 'deg)';
+        card.style.opacity = '0';
+        setTimeout(function() { callback && callback(); }, 350);
+    }
+
+    function doSkip() {
+        animateOut('left', function() {
+            currentIndex++;
+            renderCard();
+        });
+    }
+
+    function doPick() {
+        var gift = CARDS[currentIndex];
+        // Log via API
+        fetch('/api/log-suggestion', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: gift.name, gift_type: gift.gift_type})
+        });
+
+        animateOut('right', function() {
+            // Show celebration
+            celebration.style.display = 'flex';
+            setTimeout(function() {
+                celebration.style.display = 'none';
+                currentIndex++;
+                renderCard();
+            }, 1200);
+        });
+    }
+
+    // --- Button handlers ---
+    btnSkip.addEventListener('click', doSkip);
+    btnPick.addEventListener('click', doPick);
+
+    // --- Touch / swipe handlers ---
+    function onTouchStart(e) {
+        if (dragging) return;
+        dragging = true;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        currentX = 0;
+        cardEl.style.transition = 'none';
+    }
+
+    function onTouchMove(e) {
+        if (!dragging) return;
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        // If mostly vertical scrolling, bail
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 20) return;
+        e.preventDefault();
+        currentX = dx;
+        var rotate = dx * 0.08;
+        cardEl.style.transform = 'translateX(' + dx + 'px) rotate(' + rotate + 'deg)';
+
+        // Show stamps
+        var progress = Math.min(Math.abs(dx) / THRESHOLD, 1);
+        if (dx < -20) {
+            stampSkip.style.opacity = progress;
+            stampPick.style.opacity = '0';
+        } else if (dx > 20) {
+            stampPick.style.opacity = progress;
+            stampSkip.style.opacity = '0';
+        } else {
+            stampSkip.style.opacity = '0';
+            stampPick.style.opacity = '0';
+        }
+    }
+
+    function onTouchEnd() {
+        if (!dragging) return;
+        dragging = false;
+        if (currentX < -THRESHOLD) {
+            doSkip();
+        } else if (currentX > THRESHOLD) {
+            doPick();
+        } else {
+            // Snap back
+            cardEl.style.transition = 'transform 0.25s ease';
+            cardEl.style.transform = 'translateX(0) rotate(0)';
+            stampSkip.style.opacity = '0';
+            stampPick.style.opacity = '0';
+        }
+    }
+
+    // --- Mouse drag (desktop) ---
+    function onMouseDown(e) {
+        if (dragging) return;
+        dragging = true;
+        startX = e.clientX;
+        currentX = 0;
+        cardEl.style.transition = 'none';
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+
+    function onMouseMove(e) {
+        if (!dragging) return;
+        var dx = e.clientX - startX;
+        currentX = dx;
+        var rotate = dx * 0.08;
+        cardEl.style.transform = 'translateX(' + dx + 'px) rotate(' + rotate + 'deg)';
+
+        var progress = Math.min(Math.abs(dx) / THRESHOLD, 1);
+        if (dx < -20) {
+            stampSkip.style.opacity = progress;
+            stampPick.style.opacity = '0';
+        } else if (dx > 20) {
+            stampPick.style.opacity = progress;
+            stampSkip.style.opacity = '0';
+        } else {
+            stampSkip.style.opacity = '0';
+            stampPick.style.opacity = '0';
+        }
+    }
+
+    function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (!dragging) return;
+        dragging = false;
+        if (currentX < -THRESHOLD) {
+            doSkip();
+        } else if (currentX > THRESHOLD) {
+            doPick();
+        } else {
+            cardEl.style.transition = 'transform 0.25s ease';
+            cardEl.style.transform = 'translateX(0) rotate(0)';
+            stampSkip.style.opacity = '0';
+            stampPick.style.opacity = '0';
+        }
+    }
+
+    // --- Keyboard support ---
+    document.addEventListener('keydown', function(e) {
+        if (currentIndex >= CARDS.length) return;
+        if (e.key === 'ArrowLeft') doSkip();
+        else if (e.key === 'ArrowRight') doPick();
+    });
+
+    // Boot
+    renderCard();
+})();
+</script>
 {% endblock %}

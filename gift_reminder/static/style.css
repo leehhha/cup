@@ -875,3 +875,223 @@ label {
     .hide-mobile { display: block; }
     .show-mobile { display: none; }
 }
+
+/* ===== Swipe Card Deck ===== */
+.swipe-deck {
+    position: relative;
+    width: 100%;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.swipe-deck-inner {
+    width: 100%;
+    position: relative;
+}
+
+.swipe-card {
+    position: relative;
+    background: linear-gradient(145deg, #0f3460 0%, #1a1a4e 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    cursor: grab;
+    touch-action: pan-y;
+    will-change: transform;
+    transform-origin: center center;
+}
+
+.swipe-card:active {
+    cursor: grabbing;
+}
+
+.swipe-card-type {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 16px;
+}
+
+.swipe-card-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+    margin-bottom: 12px;
+}
+
+.swipe-card-tags {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.swipe-card-effort {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success);
+    background: rgba(78, 204, 163, 0.12);
+    padding: 4px 14px;
+    border-radius: 20px;
+}
+
+/* Stamp overlays (SKIP / PICK) */
+.swipe-stamp {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    padding: 8px 18px;
+    border-radius: 12px;
+    border: 4px solid;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.05s ease;
+    z-index: 10;
+}
+
+.swipe-stamp-skip {
+    left: 16px;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.swipe-stamp-pick {
+    right: 16px;
+    color: var(--success);
+    border-color: var(--success);
+    background: rgba(78, 204, 163, 0.1);
+}
+
+/* Action buttons row */
+.swipe-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 4px 0 16px;
+}
+
+.swipe-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-card);
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+    line-height: 1;
+}
+
+.swipe-btn:active {
+    transform: scale(0.9);
+}
+
+.swipe-btn-skip:hover {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.swipe-btn-pick:hover {
+    border-color: var(--success);
+    background: rgba(78, 204, 163, 0.1);
+}
+
+.swipe-counter {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Empty state */
+.swipe-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 32px 16px;
+}
+
+.swipe-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.swipe-empty h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.swipe-empty p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* Celebration overlay */
+.swipe-celebration {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 52, 96, 0.92);
+    border-radius: 20px;
+    z-index: 20;
+    animation: celebrationPop 0.4s ease;
+}
+
+.celebration-icon {
+    font-size: 56px;
+    margin-bottom: 10px;
+    animation: celebrationBounce 0.6s ease;
+}
+
+.celebration-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--success);
+}
+
+@keyframes celebrationPop {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes celebrationBounce {
+    0% { transform: scale(0.3); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Responsive adjustments */
+@media (min-width: 640px) {
+    .swipe-deck { min-height: 300px; }
+    .swipe-card { padding: 40px 32px; }
+    .swipe-card-name { font-size: 26px; }
+    .swipe-card-tags { font-size: 14px; }
+    .swipe-stamp { font-size: 32px; padding: 10px 22px; }
+    .swipe-btn { width: 72px; height: 72px; font-size: 30px; }
+}

@@ -1,10 +1,11 @@
 """Flask web application for Gift Reminder."""
 
+import json
 import os
 import secrets
 from datetime import date, datetime
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 
 from gift_reminder.data.questions import BONUS_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
 from gift_reminder.database import Database
@@ -85,8 +86,26 @@ def create_app(db_path=None):
         active_reminders = [r for r in due_reminders if r["reminder_type"] in ("monthly", "quarterly")]
         update_due = any(r["reminder_type"] == "update" for r in due_reminders)
 
-        monthly_gifts = engine.suggest_monthly_gifts(3)
+        monthly_gifts = engine.suggest_monthly_gifts(5)
         quarterly_gifts = engine.suggest_quarterly_gifts(3)
+
+        # Build a combined card deck for the swipe UI
+        card_deck = []
+        for g in monthly_gifts:
+            card_deck.append({
+                "name": g["name"],
+                "tags": g.get("tags", [])[:3],
+                "effort": g.get("effort", 1),
+                "gift_type": "monthly",
+            })
+        for g in quarterly_gifts:
+            card_deck.append({
+                "name": g["name"],
+                "tags": g.get("tags", [])[:3],
+                "effort": g.get("effort", 2),
+                "gift_type": "quarterly",
+            })
+        card_deck_json = json.dumps(card_deck)
 
         gifts = db.get_recent_gifts(10)
         for g in gifts:
@@ -126,6 +145,7 @@ def create_app(db_path=None):
             update_due=update_due,
             monthly_gifts=monthly_gifts,
             quarterly_gifts=quarterly_gifts,
+            card_deck_json=card_deck_json,
             gifts=gifts,
             reminders=reminders,
             bonus_remaining=bonus_remaining,
@@ -170,6 +190,17 @@ def create_app(db_path=None):
 
         flash("Gift logged!", "success")
         return redirect(url_for("dashboard"))
+
+    @app.route("/api/log-suggestion", methods=["POST"])
+    def api_log_suggestion():
+        data = request.get_json(silent=True) or {}
+        name = data.get("name", "").strip()
+        gift_type = data.get("gift_type", "monthly")
+        if not name:
+            return jsonify(ok=False, error="Missing gift name"), 400
+        today = date.today().isoformat()
+        db.add_gift(name, gift_type, "", today)
+        return jsonify(ok=True)
 
     @app.route("/dismiss/<int:reminder_id>")
     def dismiss_reminder(reminder_id):
