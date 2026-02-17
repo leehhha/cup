@@ -69,10 +69,10 @@
         <div class="swipe-celebration" id="celebration" style="display:none">
             <div class="celebration-icon">&#127873;</div>
             <div class="celebration-text">Gift Logged!</div>
-            <a id="celebration-buy" class="btn-buy-now" href="#" target="_blank" rel="noopener">
-                Buy on Amazon &#8594;
-            </a>
-            <button class="btn-continue" id="celebration-continue">Next Card</button>
+            <div class="celebration-links" id="celebration-links">
+                <!-- Populated by JS: 1 or 2 buttons depending on product vs experience -->
+            </div>
+            <button class="btn-continue" id="celebration-continue">Next Card &#8594;</button>
         </div>
     </div>
 
@@ -192,7 +192,7 @@
     var deckInner = document.getElementById('deck-inner');
     var deckEmpty = document.getElementById('deck-empty');
     var celebration = document.getElementById('celebration');
-    var celebrationBuy = document.getElementById('celebration-buy');
+    var celebrationLinks = document.getElementById('celebration-links');
     var celebrationContinue = document.getElementById('celebration-continue');
     var counter = document.getElementById('card-counter');
     var actions = document.getElementById('swipe-actions');
@@ -209,6 +209,32 @@
         var d = document.createElement('div');
         d.textContent = s;
         return d.innerHTML;
+    }
+
+    function buildLinksHtml(gift) {
+        if (gift.kind === 'product') {
+            return '<a class="btn-buy-now" href="' + escHtml(gift.top_pick_url) + '" target="_blank" rel="noopener">' +
+                       '\uD83C\uDF1F Top Pick: ' + escHtml(gift.top_pick_name) +
+                   '</a>' +
+                   '<a class="btn-browse" href="' + escHtml(gift.browse_url) + '" target="_blank" rel="noopener">' +
+                       '\uD83D\uDD0D See All Options' +
+                   '</a>';
+        }
+        // experience
+        return '<a class="btn-buy-now" href="' + escHtml(gift.venue_url) + '" target="_blank" rel="noopener">' +
+                   escHtml(gift.venue_name) + ' \u2192' +
+               '</a>';
+    }
+
+    function buildCardLinksHtml(gift) {
+        if (gift.kind === 'product') {
+            return '<a class="swipe-card-buy" href="' + escHtml(gift.top_pick_url) + '" target="_blank" rel="noopener"' +
+                       ' onclick="event.stopPropagation()">\uD83C\uDF1F ' + escHtml(gift.top_pick_name) + '</a>' +
+                   '<a class="swipe-card-buy swipe-card-browse" href="' + escHtml(gift.browse_url) + '" target="_blank" rel="noopener"' +
+                       ' onclick="event.stopPropagation()">\uD83D\uDD0D Browse</a>';
+        }
+        return '<a class="swipe-card-buy" href="' + escHtml(gift.venue_url) + '" target="_blank" rel="noopener"' +
+                   ' onclick="event.stopPropagation()">' + escHtml(gift.venue_name) + ' \u2192</a>';
     }
 
     function renderCard() {
@@ -239,9 +265,8 @@
             '<div class="swipe-card-tags">' + tagStr + '</div>' +
             '<div class="swipe-card-meta">' +
                 '<span class="swipe-card-effort">' + effortLabel + '</span>' +
-                '<a class="swipe-card-buy" href="' + escHtml(gift.buy_url) + '" target="_blank" rel="noopener"' +
-                    ' onclick="event.stopPropagation()">Buy on ' + escHtml(gift.buy_channel) + ' \u2192</a>' +
-            '</div>';
+            '</div>' +
+            '<div class="swipe-card-links">' + buildCardLinksHtml(gift) + '</div>';
 
         deckInner.appendChild(card);
         cardEl = card;
@@ -289,9 +314,8 @@
         });
 
         animateOut('right', function() {
-            // Populate and show celebration with Buy Now
-            celebrationBuy.href = gift.buy_url;
-            celebrationBuy.textContent = 'Buy on ' + gift.buy_channel + ' \u2192';
+            // Populate celebration links
+            celebrationLinks.innerHTML = buildLinksHtml(gift);
             celebration.style.display = 'flex';
         });
     }

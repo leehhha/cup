@@ -94,20 +94,23 @@ def create_app(db_path=None):
         card_deck = []
         for gift_type, gifts_list in [("monthly", monthly_gifts), ("quarterly", quarterly_gifts)]:
             for g in gifts_list:
-                query = g.get("buy_query") or g["name"]
-                if g.get("buy_url"):
-                    buy_url = g["buy_url"]
-                else:
-                    buy_url = "https://www.amazon.com/s?k=" + quote_plus(query)
-                card_deck.append({
+                card = {
                     "name": g["name"],
                     "tags": g.get("tags", [])[:3],
                     "effort": g.get("effort", 1),
                     "gift_type": gift_type,
                     "price": g.get("price", ""),
-                    "buy_url": buy_url,
-                    "buy_channel": g.get("buy_channel", "Amazon"),
-                })
+                    "kind": g.get("kind", "product"),
+                }
+                if card["kind"] == "product":
+                    card["top_pick_name"] = g.get("top_pick_name", "")
+                    card["top_pick_url"] = g.get("top_pick_url", "")
+                    query = g.get("browse_query") or g["name"]
+                    card["browse_url"] = "https://www.amazon.com/s?k=" + quote_plus(query)
+                else:
+                    card["venue_name"] = g.get("venue_name", "")
+                    card["venue_url"] = g.get("venue_url", "")
+                card_deck.append(card)
         card_deck_json = json.dumps(card_deck)
 
         gifts = db.get_recent_gifts(10)

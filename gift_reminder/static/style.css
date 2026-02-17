@@ -959,20 +959,42 @@ label {
     border-radius: 20px;
 }
 
+.swipe-card-links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
 .swipe-card-buy {
     display: inline-block;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--accent);
     background: rgba(233, 69, 96, 0.12);
-    padding: 4px 14px;
+    padding: 6px 12px;
     border-radius: 20px;
     text-decoration: none;
     transition: background 0.15s ease;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .swipe-card-buy:hover {
     background: rgba(233, 69, 96, 0.25);
+}
+
+.swipe-card-browse {
+    color: var(--text-secondary);
+    background: rgba(160, 160, 184, 0.1);
+}
+
+.swipe-card-browse:hover {
+    background: rgba(160, 160, 184, 0.2);
 }
 
 /* Stamp overlays (SKIP / PICK) */
@@ -1107,19 +1129,30 @@ label {
     color: var(--success);
 }
 
+.celebration-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 300px;
+    margin-top: 4px;
+}
+
 .btn-buy-now {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 4px;
-    padding: 12px 28px;
+    width: 100%;
+    padding: 12px 20px;
     background: var(--accent);
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 700;
     border-radius: var(--radius);
     text-decoration: none;
     min-height: 48px;
+    text-align: center;
     transition: background 0.15s ease, transform 0.1s ease;
     touch-action: manipulation;
 }
@@ -1132,22 +1165,44 @@ label {
     background: var(--accent-hover);
 }
 
-.btn-continue {
+.btn-browse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 10px 20px;
     background: transparent;
-    border: 1px solid var(--border);
     color: var(--text-secondary);
     font-size: 13px;
     font-weight: 600;
-    padding: 8px 20px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    min-height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    min-height: 44px;
+    text-align: center;
     transition: background 0.15s ease;
     touch-action: manipulation;
 }
 
-.btn-continue:hover {
+.btn-browse:hover {
     background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.btn-continue {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 20px;
+    cursor: pointer;
+    min-height: 40px;
+    transition: color 0.15s ease;
+    touch-action: manipulation;
+}
+
+.btn-continue:hover {
     color: var(--text-primary);
 }
 
