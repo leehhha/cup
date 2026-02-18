@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block body %}
+<!-- Header -->
+<div class="header">
+    <div class="container">
+        <h1>&#127873; Rate This Gift</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('timeline') }}" class="btn btn-ghost btn-sm">&#8592; Timeline</a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="rate-card">
+        <h2 class="rate-question">How did she like it?</h2>
+
+        <div class="rate-gift-name">{{ occasion.gift_selected }}</div>
+        <div class="rate-occasion text-secondary">
+            {{ occasion.occasion_label }} &mdash; {{ occasion.occasion_date }}
+        </div>
+
+        <form method="POST" action="{{ url_for('occasion_rate', occ_id=occasion.id) }}">
+            <!-- Emoji rating selector -->
+            <div class="emoji-rating" id="emoji-rating">
+                <button type="button" class="emoji-btn" data-value="5" title="Loved it!">
+                    <span class="emoji-icon">&#128525;</span>
+                    <span class="emoji-label">Loved it!</span>
+                </button>
+                <button type="button" class="emoji-btn" data-value="4" title="Liked it">
+                    <span class="emoji-icon">&#128522;</span>
+                    <span class="emoji-label">Liked it</span>
+                </button>
+                <button type="button" class="emoji-btn" data-value="3" title="It was OK">
+                    <span class="emoji-icon">&#128528;</span>
+                    <span class="emoji-label">OK</span>
+                </button>
+                <button type="button" class="emoji-btn" data-value="2" title="Not great">
+                    <span class="emoji-icon">&#128577;</span>
+                    <span class="emoji-label">Meh</span>
+                </button>
+                <button type="button" class="emoji-btn" data-value="1" title="Didn't like it">
+                    <span class="emoji-icon">&#128542;</span>
+                    <span class="emoji-label">No</span>
+                </button>
+            </div>
+            <input type="hidden" name="rating" id="rating-value" value="3">
+
+            <div class="form-group mt-2">
+                <label>Optional notes</label>
+                <textarea name="feedback" rows="3" placeholder="How did she react? Any details to remember..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">Submit Rating</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var buttons = document.querySelectorAll('.emoji-btn');
+    var hiddenInput = document.getElementById('rating-value');
+
+    buttons.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttons.forEach(function(b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            hiddenInput.value = btn.getAttribute('data-value');
+        });
+    });
+})();
+</script>
+{% endblock %}

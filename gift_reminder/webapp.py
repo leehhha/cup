@@ -1,4 +1,4 @@
-"""Flask web application for Gift Reminder."""
+"""Flask web application for Gift Reminder — Timeline-Centric Design."""
 
 import json
 import os
@@ -11,6 +11,7 @@ from flask import Flask, flash, jsonify, redirect, render_template, request, ses
 from gift_reminder.data.questions import BONUS_QUESTIONS, CHECKIN_3_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
 from gift_reminder.database import Database
 from gift_reminder.gift_engine import GiftEngine
+from gift_reminder.occasions import build_timeline
 
 
 def create_app(db_path=None):
@@ -25,12 +26,12 @@ def create_app(db_path=None):
     engine = GiftEngine(db)
 
     # ------------------------------------------------------------------
-    # Root
+    # Root → Timeline
     # ------------------------------------------------------------------
     @app.route("/")
     def index():
         if db.is_setup_complete():
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("timeline"))
         return render_template("welcome.html")
 
     # ------------------------------------------------------------------
@@ -43,8 +44,6 @@ def create_app(db_path=None):
             return redirect(url_for("index"))
 
         question = SETUP_QUESTIONS[index]
-
-        # Load saved answers from session
         answers = session.get("setup_answers", {})
 
         if request.method == "POST":
@@ -53,13 +52,11 @@ def create_app(db_path=None):
                 answers[question["key"]] = answer
                 session["setup_answers"] = answers
 
-            # Last question -> finish
             if index == total - 1:
                 return _finish_setup(db, answers)
 
             return redirect(url_for("setup_question", index=index + 1))
 
-        # GET
         current_answer = answers.get(question["key"], "")
         selected_list = [s.strip() for s in current_answer.split(",")] if current_answer else []
 
@@ -73,109 +70,170 @@ def create_app(db_path=None):
         )
 
     # ------------------------------------------------------------------
-    # Dashboard
+    # Timeline (new home screen)
     # ------------------------------------------------------------------
+    @app.route("/timeline")
     @app.route("/dashboard")
-    def dashboard():
+    def timeline():
         if not db.is_setup_complete():
             return redirect(url_for("index"))
 
         profile = db.get_profile()
         partner_name = profile["partner_name"]
 
-        due_reminders = db.get_due_reminders()
-        active_reminders = [r for r in due_reminders if r["reminder_type"] in ("monthly", "quarterly")]
-        update_due = any(r["reminder_type"] == "update" for r in due_reminders)
+        tl = build_timeline(db)
 
-        monthly_gifts = engine.suggest_monthly_gifts(5)
-        quarterly_gifts = engine.suggest_quarterly_gifts(3)
-
-        # Build a combined card deck for the swipe UI
-        card_deck = []
-        for gift_type, gifts_list in [("monthly", monthly_gifts), ("quarterly", quarterly_gifts)]:
-            for g in gifts_list:
-                card = {
-                    "name": g["name"],
-                    "tags": g.get("tags", [])[:3],
-                    "effort": g.get("effort", 1),
-                    "gift_type": gift_type,
-                    "price": g.get("price", ""),
-                    "kind": g.get("kind", "product"),
-                }
-                if card["kind"] == "product":
-                    card["top_pick_name"] = g.get("top_pick_name", "")
-                    card["top_pick_url"] = g.get("top_pick_url", "")
-                    query = g.get("browse_query") or g["name"]
-                    card["browse_url"] = "https://www.amazon.com/s?k=" + quote_plus(query)
-                else:
-                    card["venue_name"] = g.get("venue_name", "")
-                    card["venue_url"] = g.get("venue_url", "")
-                card_deck.append(card)
-        card_deck_json = json.dumps(card_deck)
-
-        gifts = db.get_recent_gifts(10)
-        for g in gifts:
-            try:
-                d = datetime.fromisoformat(g["date_given"])
-                g["date_display"] = d.strftime("%b %d")
-            except (ValueError, TypeError):
-                g["date_display"] = g["date_given"][:10] if g["date_given"] else "?"
-
-        reminders = db.get_all_reminders()
-        today = date.today()
-        for r in reminders:
-            try:
-                d = date.fromisoformat(r["next_due"])
-                days_until = (d - today).days
-                if days_until <= 0:
-                    r["due_display"] = "Due now!"
-                    r["due_class"] = "due-now"
-                elif days_until <= 7:
-                    r["due_display"] = f"In {days_until} days"
-                    r["due_class"] = "due-soon"
-                else:
-                    r["due_display"] = d.strftime("%B %d, %Y")
-                    r["due_class"] = "due-later"
-            except (ValueError, TypeError):
-                r["due_display"] = r["next_due"]
-                r["due_class"] = "due-later"
-
-        # Bonus questions remaining
         answered_keys = db.get_answered_question_keys()
         bonus_remaining = len([q for q in BONUS_QUESTIONS if q["key"] not in answered_keys])
 
-        giver = db.get_giver_profile()
-        month_skipped = db.is_month_skipped()
-        busy_handling = giver.get("busy_handling", "") if giver else ""
-
         return render_template(
-            "dashboard.html",
+            "timeline.html",
             partner_name=partner_name,
-            active_reminders=active_reminders,
-            update_due=update_due,
-            monthly_gifts=monthly_gifts,
-            quarterly_gifts=quarterly_gifts,
-            card_deck_json=card_deck_json,
-            gifts=gifts,
-            reminders=reminders,
+            next_up=tl["next_up"],
+            upcoming=tl["upcoming"],
+            past=tl["past"],
             bonus_remaining=bonus_remaining,
-            month_skipped=month_skipped,
-            busy_handling=busy_handling,
         )
 
     # ------------------------------------------------------------------
-    # Gift actions
+    # Occasion state machine
     # ------------------------------------------------------------------
-    @app.route("/log-suggestion")
-    def log_suggestion():
-        name = request.args.get("name", "")
-        gift_type = request.args.get("gift_type", "monthly")
-        if name:
-            today = date.today().isoformat()
-            db.add_gift(name, gift_type, "", today)
-            flash("Gift logged!", "success")
-        return redirect(url_for("dashboard"))
+    @app.route("/occasion/<int:occ_id>/give-gift", methods=["POST"])
+    def occasion_give_gift(occ_id):
+        """Transition: upcoming → planning, then redirect to card selection."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] not in ("upcoming", "planning"):
+            return redirect(url_for("timeline"))
+        db.update_occasion_state(occ_id, "planning")
+        return redirect(url_for("occasion_select_gift", occ_id=occ_id))
 
+    @app.route("/occasion/<int:occ_id>/select-gift")
+    def occasion_select_gift(occ_id):
+        """Show card-based gift selection UI for this occasion."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] not in ("planning", "selected"):
+            return redirect(url_for("timeline"))
+
+        profile = db.get_profile()
+        partner_name = profile["partner_name"]
+
+        # Determine gift pool based on occasion type
+        otype = occ["occasion_type"]
+        if otype == "quarterly":
+            gifts = engine.suggest_quarterly_gifts(8)
+            pool_type = "quarterly"
+        else:
+            # monthly, birthday, anniversary, holidays all use monthly pool
+            gifts = engine.suggest_monthly_gifts(8)
+            pool_type = "monthly"
+
+        card_deck = _build_card_deck(gifts, pool_type)
+        card_deck_json = json.dumps(card_deck)
+
+        return render_template(
+            "select_gift.html",
+            occasion=occ,
+            partner_name=partner_name,
+            card_deck_json=card_deck_json,
+        )
+
+    @app.route("/occasion/<int:occ_id>/confirm-gift", methods=["POST"])
+    def occasion_confirm_gift(occ_id):
+        """Save selected gift, transition to 'selected' state."""
+        occ = db.get_occasion(occ_id)
+        if not occ:
+            return redirect(url_for("timeline"))
+
+        data = request.get_json(silent=True) or {}
+        gift_name = data.get("name", "").strip()
+        purchase_link = data.get("purchase_link", "").strip()
+
+        if not gift_name:
+            return jsonify(ok=False, error="No gift name"), 400
+
+        db.update_occasion_state(
+            occ_id, "selected",
+            gift_selected=gift_name,
+            gift_purchase_link=purchase_link,
+        )
+        db.log_interaction(gift_name, "picked", occ["occasion_type"])
+        return jsonify(ok=True)
+
+    @app.route("/occasion/<int:occ_id>/mark-given", methods=["POST"])
+    def occasion_mark_given(occ_id):
+        """Transition: selected → given."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] != "selected":
+            return redirect(url_for("timeline"))
+
+        db.update_occasion_state(occ_id, "given")
+
+        # Also log to gift history for the engine
+        gift_name = occ.get("gift_selected", "")
+        if gift_name:
+            otype = occ["occasion_type"]
+            gtype = "quarterly" if otype == "quarterly" else "monthly"
+            db.add_gift(gift_name, gtype, "", occ["occasion_date"])
+
+        flash("Gift marked as given!", "success")
+        return redirect(url_for("timeline"))
+
+    @app.route("/occasion/<int:occ_id>/skip", methods=["POST"])
+    def occasion_skip(occ_id):
+        """Transition: upcoming → skipped."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] not in ("upcoming", "planning"):
+            return redirect(url_for("timeline"))
+        db.update_occasion_state(occ_id, "skipped")
+        return redirect(url_for("timeline"))
+
+    @app.route("/occasion/<int:occ_id>/change-gift", methods=["POST"])
+    def occasion_change_gift(occ_id):
+        """Go back to planning from selected state."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] != "selected":
+            return redirect(url_for("timeline"))
+        db.update_occasion_state(occ_id, "planning", gift_selected="", gift_purchase_link="")
+        return redirect(url_for("occasion_select_gift", occ_id=occ_id))
+
+    # ------------------------------------------------------------------
+    # Rating / Feedback
+    # ------------------------------------------------------------------
+    @app.route("/occasion/<int:occ_id>/rate", methods=["GET", "POST"])
+    def occasion_rate(occ_id):
+        """Rate a gift after giving it."""
+        occ = db.get_occasion(occ_id)
+        if not occ or occ["state"] != "given":
+            return redirect(url_for("timeline"))
+
+        if request.method == "POST":
+            rating = int(request.form.get("rating", "3"))
+            feedback = request.form.get("feedback", "").strip()
+
+            db.save_gift_rating(
+                occasion_id=occ_id,
+                gift_name=occ.get("gift_selected", ""),
+                rating=rating,
+                feedback_text=feedback,
+                date_given=occ["occasion_date"],
+            )
+            db.update_occasion_state(occ_id, "complete")
+
+            # Also update gift_history rating if exists
+            gifts = db.get_all_gifts()
+            for g in gifts:
+                if g["gift_name"] == occ.get("gift_selected") and not g.get("rating"):
+                    db.rate_gift(g["id"], rating, feedback)
+                    break
+
+            flash("Thanks for the feedback!", "success")
+            return redirect(url_for("timeline"))
+
+        return render_template("rate_gift.html", occasion=occ)
+
+    # ------------------------------------------------------------------
+    # Gift actions (legacy + API)
+    # ------------------------------------------------------------------
     @app.route("/log-gift", methods=["POST"])
     def log_gift():
         name = request.form.get("gift_name", "").strip()
@@ -185,7 +243,7 @@ def create_app(db_path=None):
 
         if not name:
             flash("Please enter a gift name.", "error")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("timeline"))
 
         today = date.today().isoformat()
         db.add_gift(name, gift_type, "", today, notes)
@@ -201,7 +259,7 @@ def create_app(db_path=None):
                 db.rate_gift(gifts[0]["id"], rating_int, notes)
 
         flash("Gift logged!", "success")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("timeline"))
 
     @app.route("/api/log-suggestion", methods=["POST"])
     def api_log_suggestion():
@@ -214,10 +272,16 @@ def create_app(db_path=None):
         db.add_gift(name, gift_type, "", today)
         return jsonify(ok=True)
 
-    @app.route("/dismiss/<int:reminder_id>")
-    def dismiss_reminder(reminder_id):
-        db.advance_reminder(reminder_id)
-        return redirect(url_for("dashboard"))
+    @app.route("/api/log-interaction", methods=["POST"])
+    def api_log_interaction():
+        data = request.get_json(silent=True) or {}
+        gift_name = data.get("name", "").strip()
+        action = data.get("action", "").strip()
+        gift_type = data.get("gift_type", "")
+        if not gift_name or action not in ("picked", "skipped", "link_click"):
+            return jsonify(ok=False, error="Invalid interaction"), 400
+        db.log_interaction(gift_name, action, gift_type)
+        return jsonify(ok=True)
 
     # ------------------------------------------------------------------
     # Bonus questions
@@ -228,7 +292,7 @@ def create_app(db_path=None):
         unanswered = [q for q in BONUS_QUESTIONS if q["key"] not in answered_keys]
         if not unanswered:
             flash("You've answered all bonus questions!", "success")
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("timeline"))
         return render_template("bonus_intro.html", total=len(unanswered))
 
     @app.route("/bonus/<int:index>", methods=["GET", "POST"])
@@ -238,7 +302,7 @@ def create_app(db_path=None):
         total = len(unanswered)
 
         if total == 0:
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("timeline"))
         if index < 0 or index >= total:
             return redirect(url_for("bonus_intro"))
 
@@ -251,13 +315,11 @@ def create_app(db_path=None):
                 answers[question["key"]] = answer
                 session["bonus_answers"] = answers
 
-            # Last question -> finish
             if index == total - 1:
                 return _finish_bonus(db, unanswered, answers)
 
             return redirect(url_for("bonus_question", index=index + 1))
 
-        # GET
         current_answer = answers.get(question["key"], "")
         selected_list = [s.strip() for s in current_answer.split(",")] if current_answer else []
 
@@ -280,7 +342,7 @@ def create_app(db_path=None):
         count = len(answers)
         if count:
             flash(f"Saved {count} answer{'s' if count != 1 else ''}!", "success")
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("timeline"))
 
     # ------------------------------------------------------------------
     # 6-month update
@@ -365,31 +427,36 @@ def create_app(db_path=None):
     def checkin3_complete():
         return render_template("checkin3_complete.html")
 
-    # ------------------------------------------------------------------
-    # Skip month & interaction tracking
-    # ------------------------------------------------------------------
-    @app.route("/api/skip-month", methods=["POST"])
-    def api_skip_month():
-        db.skip_month()
-        return jsonify(ok=True)
-
-    @app.route("/api/log-interaction", methods=["POST"])
-    def api_log_interaction():
-        data = request.get_json(silent=True) or {}
-        gift_name = data.get("name", "").strip()
-        action = data.get("action", "").strip()
-        gift_type = data.get("gift_type", "")
-        if not gift_name or action not in ("picked", "skipped", "link_click"):
-            return jsonify(ok=False, error="Invalid interaction"), 400
-        db.log_interaction(gift_name, action, gift_type)
-        return jsonify(ok=True)
-
     return app
 
 
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
+
+def _build_card_deck(gifts: list[dict], pool_type: str) -> list[dict]:
+    """Build JSON-serializable card deck from gift suggestions."""
+    deck = []
+    for g in gifts:
+        card = {
+            "name": g["name"],
+            "tags": g.get("tags", [])[:3],
+            "effort": g.get("effort", 1),
+            "gift_type": pool_type,
+            "price": g.get("price", ""),
+            "kind": g.get("kind", "product"),
+        }
+        if card["kind"] == "product":
+            card["top_pick_name"] = g.get("top_pick_name", "")
+            card["top_pick_url"] = g.get("top_pick_url", "")
+            query = g.get("browse_query") or g["name"]
+            card["browse_url"] = "https://www.amazon.com/s?k=" + quote_plus(query)
+        else:
+            card["venue_name"] = g.get("venue_name", "")
+            card["venue_url"] = g.get("venue_url", "")
+        deck.append(card)
+    return deck
 
 
 def _finish_setup(db, answers):
@@ -399,8 +466,8 @@ def _finish_setup(db, answers):
     for q in SETUP_QUESTIONS:
         answer = answers.get(q["key"], "")
         if answer:
-            if q["category"] == "giver":
-                continue  # saved separately in giver_profile
+            if q["category"] in ("giver", "occasions"):
+                continue  # saved separately
             db.save_setup_answer(q["key"], q["text"], answer, q["category"])
 
     # Save giver profile answers
@@ -408,9 +475,57 @@ def _finish_setup(db, answers):
     if any(answers.get(k) for k in giver_keys):
         db.save_giver_profile(answers)
 
+    # Save special dates from occasion answers
+    _save_special_dates(db, answers)
+
     db.init_reminders()
     session.pop("setup_answers", None)
     return render_template("setup_complete.html", partner_name=partner_name)
+
+
+def _save_special_dates(db, answers: dict):
+    """Parse occasion answers and save special dates to DB."""
+    birthday = answers.get("partner_birthday", "").strip()
+    anniversary = answers.get("anniversary_date", "").strip()
+    is_mother = answers.get("is_mother", "").strip()
+    holidays = answers.get("holidays", "")
+
+    # Save birthday
+    if birthday:
+        db.save_special_date("birthday", birthday)
+
+    # Save anniversary
+    if anniversary:
+        db.save_special_date("anniversary", anniversary)
+
+    # Parse selected holidays
+    holiday_list = [h.strip() for h in holidays.split(",") if h.strip()]
+
+    # Valentine's Day
+    val_enabled = any("valentine" in h.lower() for h in holiday_list)
+    if val_enabled:
+        db.save_special_date("valentines", "02/14", enabled=True)
+
+    # Mother's Day
+    mom_enabled = ("Yes" in is_mother) or any("mother" in h.lower() for h in holiday_list)
+    if mom_enabled:
+        db.save_special_date("mothers_day", "05/01", enabled=True)  # calculated dynamically
+
+    # Christmas
+    xmas_enabled = any("christmas" in h.lower() for h in holiday_list)
+    if xmas_enabled:
+        db.save_special_date("christmas", "12/25", enabled=True)
+
+    # Birthday and Anniversary are enabled if selected in holidays
+    if birthday and any("birthday" in h.lower() for h in holiday_list):
+        db.save_special_date("birthday", birthday, enabled=True)
+    elif birthday:
+        db.save_special_date("birthday", birthday, enabled=True)
+
+    if anniversary and any("anniversary" in h.lower() for h in holiday_list):
+        db.save_special_date("anniversary", anniversary, enabled=True)
+    elif anniversary:
+        db.save_special_date("anniversary", anniversary, enabled=True)
 
 
 def _persist_bonus_answers(db, questions, answers):
@@ -434,7 +549,6 @@ def _finish_checkin3(db, answers):
         if answer:
             db.save_checkin_answer("3month", q["key"], q["text"], answer)
 
-    # If budget answer changed, update giver profile
     budget_answer = answers.get("checkin3_budget", "")
     if budget_answer and budget_answer != "Perfect":
         giver = db.get_giver_profile()
@@ -449,7 +563,6 @@ def _finish_checkin3(db, answers):
                 "giver_diy_comfort": giver["diy_comfort"],
                 "giver_busy_handling": giver["busy_handling"],
             }
-            # Adjust budget direction based on feedback
             if budget_answer == "I can spend more":
                 budget_map = {
                     "Under $25": "$25 – $50",

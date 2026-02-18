@@ -1292,3 +1292,215 @@ label {
     .last-minute-card { flex-wrap: nowrap; }
     .last-minute-card .btn { width: auto; }
 }
+
+/* ===== Timeline ===== */
+.tl-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin: 24px 0 10px;
+}
+
+.tl-section-label:first-child {
+    margin-top: 0;
+}
+
+.tl-card {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    border-left: 3px solid var(--border);
+}
+
+.tl-card-next {
+    border-left-color: var(--accent);
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.08) 0%, var(--bg-card) 100%);
+}
+
+.tl-card-past {
+    opacity: 0.7;
+    border-left-color: var(--text-muted);
+}
+
+.tl-card-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 32px;
+    text-align: center;
+    line-height: 1;
+    padding-top: 2px;
+}
+
+.tl-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.tl-card-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.tl-card-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.tl-card-days {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.tl-card-days.tl-urgent {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.tl-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.tl-card-status {
+    font-size: 13px;
+    color: var(--accent-soft);
+    margin-top: 6px;
+    font-style: italic;
+}
+
+.tl-card-status.tl-given {
+    color: var(--success);
+    font-style: normal;
+    font-weight: 600;
+}
+
+.tl-card-selected {
+    font-size: 14px;
+    color: var(--success);
+    font-weight: 600;
+    margin-top: 6px;
+}
+
+.tl-past-gift {
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-top: 4px;
+}
+
+.tl-past-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.tl-past-feedback {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+@media (min-width: 640px) {
+    .tl-card { padding: 18px 20px; gap: 14px; }
+    .tl-card-icon { font-size: 28px; width: 36px; }
+    .tl-card-label { font-size: 16px; }
+}
+
+/* ===== Select Gift Page ===== */
+.select-occasion-info {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+/* ===== Rating Page ===== */
+.rate-card {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.rate-question {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.rate-gift-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--success);
+    margin-bottom: 4px;
+}
+
+.rate-occasion {
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.emoji-rating {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.emoji-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 10px;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-width: 56px;
+    touch-action: manipulation;
+}
+
+.emoji-btn:active {
+    transform: scale(0.95);
+}
+
+.emoji-btn.selected {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.1);
+}
+
+.emoji-icon {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.emoji-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.emoji-btn.selected .emoji-label {
+    color: var(--accent);
+}
+
+@media (min-width: 640px) {
+    .emoji-btn { min-width: 72px; padding: 14px 12px; }
+    .emoji-icon { font-size: 40px; }
+    .emoji-label { font-size: 11px; }
+    .rate-question { font-size: 26px; }
+}

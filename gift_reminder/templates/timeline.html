@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block body %}
+<!-- Header -->
+<div class="header">
+    <div class="container">
+        <h1>&#127873; Gifts for {{ partner_name }}</h1>
+    </div>
+</div>
+
+<div class="container py-4">
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- ====== NEXT UP ====== -->
+    {% if next_up %}
+    <div class="tl-section-label">&#128205; NEXT UP</div>
+    <div class="tl-card tl-card-next">
+        <div class="tl-card-icon">{{ next_up.icon|safe }}</div>
+        <div class="tl-card-body">
+            <div class="tl-card-label">{{ next_up.occasion_label }}</div>
+            <div class="tl-card-date">{{ next_up.date_display }}</div>
+            <div class="tl-card-days {% if next_up.days_until <= 7 %}tl-urgent{% endif %}">{{ next_up.days_label }}</div>
+
+            {% if next_up.state == 'upcoming' %}
+                <div class="tl-card-actions">
+                    <form method="POST" action="{{ url_for('occasion_give_gift', occ_id=next_up.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-primary btn-sm">Give Gift</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('occasion_skip', occ_id=next_up.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Skip</button>
+                    </form>
+                </div>
+
+            {% elif next_up.state == 'planning' %}
+                <div class="tl-card-status">Browsing gifts...</div>
+                <div class="tl-card-actions">
+                    <a href="{{ url_for('occasion_select_gift', occ_id=next_up.id) }}" class="btn btn-primary btn-sm">Continue</a>
+                </div>
+
+            {% elif next_up.state == 'selected' %}
+                <div class="tl-card-selected">&#127775; {{ next_up.gift_selected }}</div>
+                <div class="tl-card-actions">
+                    {% if next_up.gift_purchase_link %}
+                    <a href="{{ next_up.gift_purchase_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('occasion_mark_given', occ_id=next_up.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-secondary btn-sm">Mark as Given</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('occasion_change_gift', occ_id=next_up.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Change Gift</button>
+                    </form>
+                </div>
+
+            {% elif next_up.state == 'given' %}
+                <div class="tl-card-status tl-given">&#9989; Gift Given: {{ next_up.gift_selected }}</div>
+                <div class="tl-card-actions">
+                    <a href="{{ url_for('occasion_rate', occ_id=next_up.id) }}" class="btn btn-primary btn-sm">Rate This Gift</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ====== UPCOMING ====== -->
+    {% if upcoming %}
+    <div class="tl-section-label">UPCOMING</div>
+    {% for occ in upcoming %}
+    <div class="tl-card">
+        <div class="tl-card-icon">{{ occ.icon|safe }}</div>
+        <div class="tl-card-body">
+            <div class="tl-card-label">{{ occ.occasion_label }}</div>
+            <div class="tl-card-date">{{ occ.date_display }}</div>
+            <div class="tl-card-days">{{ occ.days_label }}</div>
+
+            {% if occ.state == 'upcoming' %}
+                <div class="tl-card-actions">
+                    <form method="POST" action="{{ url_for('occasion_give_gift', occ_id=occ.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-primary btn-sm">Give Gift</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('occasion_skip', occ_id=occ.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Skip</button>
+                    </form>
+                </div>
+
+            {% elif occ.state == 'planning' %}
+                <div class="tl-card-status">Browsing gifts...</div>
+                <div class="tl-card-actions">
+                    <a href="{{ url_for('occasion_select_gift', occ_id=occ.id) }}" class="btn btn-secondary btn-sm">Continue</a>
+                </div>
+
+            {% elif occ.state == 'selected' %}
+                <div class="tl-card-selected">&#127775; {{ occ.gift_selected }}</div>
+                <div class="tl-card-actions">
+                    {% if occ.gift_purchase_link %}
+                    <a href="{{ occ.gift_purchase_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('occasion_mark_given', occ_id=occ.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-secondary btn-sm">Mark as Given</button>
+                    </form>
+                </div>
+
+            {% elif occ.state == 'given' %}
+                <div class="tl-card-status tl-given">&#9989; Gift Given: {{ occ.gift_selected }}</div>
+                <div class="tl-card-actions">
+                    <a href="{{ url_for('occasion_rate', occ_id=occ.id) }}" class="btn btn-secondary btn-sm">Rate This Gift</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- ====== PAST GIFTS ====== -->
+    {% if past %}
+    <div class="tl-section-label">PAST GIFTS</div>
+    {% for occ in past %}
+    <div class="tl-card tl-card-past">
+        <div class="tl-card-icon">
+            {% if occ.state == 'complete' %}&#9989;{% else %}&#8856;{% endif %}
+        </div>
+        <div class="tl-card-body">
+            <div class="tl-card-label">{{ occ.occasion_label }}</div>
+            <div class="tl-card-date text-muted">{{ occ.date_display }}</div>
+            {% if occ.state == 'complete' and occ.gift_selected %}
+                <div class="tl-past-gift">{{ occ.gift_selected }}</div>
+                {% if occ.rating %}
+                    <div class="tl-past-rating">
+                        {% set emojis = {1: "&#128542;", 2: "&#128577;", 3: "&#128528;", 4: "&#128522;", 5: "&#128525;"} %}
+                        {{ emojis.get(occ.rating.rating, "")|safe }}
+                        <span class="star-display">{{ "&#9733;" * occ.rating.rating|int }}{{ "&#9734;" * (5 - occ.rating.rating|int) }}</span>
+                        {% if occ.rating.feedback_text %}
+                            <span class="tl-past-feedback">{{ occ.rating.feedback_text }}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% elif occ.state == 'skipped' %}
+                <div class="tl-past-gift text-muted">Skipped</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Bonus Questions CTA -->
+    {% if bonus_remaining > 0 %}
+    <div class="tl-section-label">IMPROVE SUGGESTIONS</div>
+    <div class="bonus-cta">
+        <div class="bonus-cta-content">
+            <div class="bonus-cta-icon">&#128161;</div>
+            <div class="bonus-cta-text">
+                {{ bonus_remaining }} more question{{ 's' if bonus_remaining != 1 }} to fine-tune gift suggestions
+            </div>
+        </div>
+        <a href="{{ url_for('bonus_intro') }}" class="btn btn-secondary">Answer Now</a>
+    </div>
+    {% endif %}
+
+    <div style="height: 32px"></div>
+</div>
+{% endblock %}

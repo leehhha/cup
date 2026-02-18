@@ -101,6 +101,37 @@ class Database:
                 gift_type TEXT,
                 created_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS special_dates (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                occasion_name TEXT NOT NULL,
+                date_md TEXT NOT NULL,
+                recurring INTEGER NOT NULL DEFAULT 1,
+                enabled INTEGER NOT NULL DEFAULT 1
+            );
+
+            CREATE TABLE IF NOT EXISTS occasions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                occasion_type TEXT NOT NULL,
+                occasion_label TEXT NOT NULL,
+                occasion_date TEXT NOT NULL,
+                state TEXT NOT NULL DEFAULT 'upcoming',
+                gift_selected TEXT,
+                gift_purchase_link TEXT,
+                date_state_changed TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS gift_ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                occasion_id INTEGER,
+                gift_name TEXT NOT NULL,
+                rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+                feedback_text TEXT,
+                date_given TEXT,
+                date_rated TEXT,
+                purchase_link_clicked INTEGER DEFAULT 0
+            );
         """)
         self.conn.commit()
 
@@ -398,6 +429,110 @@ class Database:
         today = date.today()
         val = self.get_state("skipped_month")
         return val == f"{today.year}-{today.month:02d}"
+
+    # --- Special Dates ---
+
+    def save_special_date(self, occasion_name: str, date_md: str, enabled: bool = True):
+        existing = self.conn.execute(
+            "SELECT id FROM special_dates WHERE occasion_name = ?", (occasion_name,)
+        ).fetchone()
+        if existing:
+            self.conn.execute(
+                "UPDATE special_dates SET date_md = ?, enabled = ? WHERE id = ?",
+                (date_md, int(enabled), existing["id"]),
+            )
+        else:
+            self.conn.execute(
+                "INSERT INTO special_dates (occasion_name, date_md, recurring, enabled) VALUES (?, ?, 1, ?)",
+                (occasion_name, date_md, int(enabled)),
+            )
+        self.conn.commit()
+
+    def get_special_dates(self) -> list[dict]:
+        rows = self.conn.execute("SELECT * FROM special_dates WHERE enabled = 1").fetchall()
+        return [dict(r) for r in rows]
+
+    # --- Occasions ---
+
+    def create_occasion(self, occasion_type: str, label: str, occasion_date: str) -> int:
+        now = datetime.now().isoformat()
+        cursor = self.conn.execute(
+            """INSERT INTO occasions (occasion_type, occasion_label, occasion_date, state, date_state_changed, created_at)
+               VALUES (?, ?, ?, 'upcoming', ?, ?)""",
+            (occasion_type, label, occasion_date, now, now),
+        )
+        self.conn.commit()
+        return cursor.lastrowid
+
+    def get_occasion(self, occasion_id: int) -> dict | None:
+        row = self.conn.execute("SELECT * FROM occasions WHERE id = ?", (occasion_id,)).fetchone()
+        return dict(row) if row else None
+
+    def get_upcoming_occasions(self, limit: int = 10) -> list[dict]:
+        rows = self.conn.execute(
+            """SELECT * FROM occasions
+               WHERE state IN ('upcoming', 'planning', 'selected', 'given')
+               ORDER BY occasion_date ASC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_past_occasions(self, limit: int = 10) -> list[dict]:
+        rows = self.conn.execute(
+            """SELECT * FROM occasions
+               WHERE state IN ('complete', 'skipped')
+               ORDER BY occasion_date DESC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_occasion_state(self, occasion_id: int, new_state: str, **kwargs):
+        now = datetime.now().isoformat()
+        updates = ["state = ?", "date_state_changed = ?"]
+        params = [new_state, now]
+        for key in ("gift_selected", "gift_purchase_link"):
+            if key in kwargs:
+                updates.append(f"{key} = ?")
+                params.append(kwargs[key])
+        params.append(occasion_id)
+        self.conn.execute(
+            f"UPDATE occasions SET {', '.join(updates)} WHERE id = ?", params
+        )
+        self.conn.commit()
+
+    def find_occasion_by_date_type(self, occasion_date: str, occasion_type: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM occasions WHERE occasion_date = ? AND occasion_type = ?",
+            (occasion_date, occasion_type),
+        ).fetchone()
+        return dict(row) if row else None
+
+    # --- Gift Ratings ---
+
+    def save_gift_rating(self, occasion_id: int, gift_name: str, rating: int,
+                         feedback_text: str = "", date_given: str = "",
+                         purchase_link_clicked: bool = False):
+        now = date.today().isoformat()
+        self.conn.execute(
+            """INSERT INTO gift_ratings (occasion_id, gift_name, rating, feedback_text,
+               date_given, date_rated, purchase_link_clicked)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (occasion_id, gift_name, rating, feedback_text, date_given, now,
+             int(purchase_link_clicked)),
+        )
+        self.conn.commit()
+
+    def get_rating_for_occasion(self, occasion_id: int) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM gift_ratings WHERE occasion_id = ?", (occasion_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_all_ratings(self) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM gift_ratings ORDER BY date_rated DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     # --- Wizard Drafts ---
 

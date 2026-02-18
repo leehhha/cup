@@ -149,6 +149,44 @@ SETUP_QUESTIONS = [
         "section": "Gifts & Experiences",
     },
 
+    # --- Special occasions: dates and holidays ---
+    {
+        "key": "partner_birthday",
+        "text": "What is her birthday? (MM/DD, e.g. 05/15)",
+        "category": "occasions",
+        "type": "text",
+        "section": "Special Occasions",
+    },
+    {
+        "key": "anniversary_date",
+        "text": "What is your anniversary? (MM/DD, e.g. 09/22)",
+        "category": "occasions",
+        "type": "text",
+        "section": "Special Occasions",
+    },
+    {
+        "key": "is_mother",
+        "text": "Is she a mother?",
+        "category": "occasions",
+        "type": "options",
+        "options": ["Yes", "No"],
+        "section": "Special Occasions",
+    },
+    {
+        "key": "holidays",
+        "text": "Which holidays should we remind you about? (Select all that apply)",
+        "category": "occasions",
+        "type": "multi",
+        "options": [
+            "Valentine's Day (Feb 14)",
+            "Mother's Day (May)",
+            "Her Birthday",
+            "Anniversary",
+            "Christmas (Dec 25)",
+        ],
+        "section": "Special Occasions",
+    },
+
     # --- Giver profile: 8 questions about YOUR gift-giving style ---
     {
         "key": "giver_style",
