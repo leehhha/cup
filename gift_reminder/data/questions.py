@@ -148,6 +148,107 @@ SETUP_QUESTIONS = [
         "type": "text",
         "section": "Gifts & Experiences",
     },
+
+    # --- Giver profile: 8 questions about YOUR gift-giving style ---
+    {
+        "key": "giver_style",
+        "text": "How would you describe your gift-giving style?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Planner — I like to think ahead",
+            "Last-minute — I work best under pressure",
+            "Spontaneous — I give when inspiration strikes",
+            "Delegator — just tell me what to buy",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_time",
+        "text": "How much time can you realistically spend on a gift each month?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "5 minutes (quick online order)",
+            "15 minutes (a little browsing)",
+            "30+ minutes (I enjoy the hunt)",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_monthly_budget",
+        "text": "What's your comfortable monthly gift budget?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Under $25",
+            "$25 – $50",
+            "$50 – $100",
+            "$100+",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_quarterly_budget",
+        "text": "What about for bigger quarterly surprises?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Under $50",
+            "$50 – $100",
+            "$100 – $200",
+            "$200+",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_gift_type",
+        "text": "What type of gifts are you most comfortable giving?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Physical products (delivered to door)",
+            "Experiences (tickets, reservations, outings)",
+            "Mix of both",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_experience_comfort",
+        "text": "How comfortable are you planning an experience (booking, logistics)?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Very comfortable — I'll handle it all",
+            "Somewhat — keep it simple",
+            "Not really — just show me what to buy",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_diy_comfort",
+        "text": "Would you ever make or personalize a gift yourself?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Absolutely — I'm crafty",
+            "Maybe — if it's easy",
+            "No way — I'll buy something",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
+    {
+        "key": "giver_busy_handling",
+        "text": "If life gets hectic and you miss a month, what should we do?",
+        "category": "giver",
+        "type": "options",
+        "options": [
+            "Send me a last-minute rescue idea",
+            "Skip it and double up next month",
+            "Just remind me — I'll figure it out",
+        ],
+        "section": "About Your Gift-Giving Style",
+    },
 ]
 
 # --- Bonus questions: 15 extra questions for engaged users ---
@@ -338,7 +439,31 @@ BONUS_QUESTIONS = [
     },
 ]
 
-# 6-month update questions (max 5)
+# 3-month check-in questions (quick pulse check)
+CHECKIN_3_QUESTIONS = [
+    {
+        "key": "checkin3_hits",
+        "text": "Which recent gifts were the biggest hits?",
+        "type": "text",
+    },
+    {
+        "key": "checkin3_misses",
+        "text": "Any gifts that didn't land? What would have been better?",
+        "type": "text",
+    },
+    {
+        "key": "checkin3_budget",
+        "text": "Is the current budget still working for you?",
+        "type": "options",
+        "options": [
+            "Perfect",
+            "I'd like to spend less",
+            "I can spend more",
+        ],
+    },
+]
+
+# 6-month update questions (deeper refresh)
 UPDATE_QUESTIONS = [
     {
         "key": "gift_feedback",

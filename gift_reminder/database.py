@@ -70,6 +70,37 @@ class Database:
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS giver_profile (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                giver_style TEXT,
+                time_budget TEXT,
+                monthly_budget TEXT,
+                quarterly_budget TEXT,
+                gift_type_pref TEXT,
+                experience_comfort TEXT,
+                diy_comfort TEXT,
+                busy_handling TEXT,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS checkin_answers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                checkin_type TEXT NOT NULL CHECK (checkin_type IN ('3month', '6month')),
+                question_key TEXT NOT NULL,
+                question_text TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                session_date TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS gift_interactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                gift_name TEXT NOT NULL,
+                action TEXT NOT NULL CHECK (action IN ('picked', 'skipped', 'link_click')),
+                gift_type TEXT,
+                created_at TEXT NOT NULL
+            );
         """)
         self.conn.commit()
 
@@ -274,6 +305,99 @@ class Database:
             "SELECT * FROM update_answers WHERE session_date = ?", (session_date,)
         ).fetchall()
         return [dict(r) for r in rows]
+
+    # --- Giver Profile ---
+
+    def save_giver_profile(self, answers: dict):
+        now = datetime.now().isoformat()
+        self.conn.execute(
+            """INSERT INTO giver_profile (id, giver_style, time_budget, monthly_budget,
+               quarterly_budget, gift_type_pref, experience_comfort, diy_comfort,
+               busy_handling, updated_at)
+               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+               giver_style=?, time_budget=?, monthly_budget=?, quarterly_budget=?,
+               gift_type_pref=?, experience_comfort=?, diy_comfort=?, busy_handling=?,
+               updated_at=?""",
+            (
+                answers.get("giver_style", ""),
+                answers.get("giver_time", ""),
+                answers.get("giver_monthly_budget", ""),
+                answers.get("giver_quarterly_budget", ""),
+                answers.get("giver_gift_type", ""),
+                answers.get("giver_experience_comfort", ""),
+                answers.get("giver_diy_comfort", ""),
+                answers.get("giver_busy_handling", ""),
+                now,
+                answers.get("giver_style", ""),
+                answers.get("giver_time", ""),
+                answers.get("giver_monthly_budget", ""),
+                answers.get("giver_quarterly_budget", ""),
+                answers.get("giver_gift_type", ""),
+                answers.get("giver_experience_comfort", ""),
+                answers.get("giver_diy_comfort", ""),
+                answers.get("giver_busy_handling", ""),
+                now,
+            ),
+        )
+        self.conn.commit()
+
+    def get_giver_profile(self) -> dict | None:
+        row = self.conn.execute("SELECT * FROM giver_profile WHERE id = 1").fetchone()
+        return dict(row) if row else None
+
+    # --- Check-in Answers ---
+
+    def save_checkin_answer(self, checkin_type: str, question_key: str, question_text: str, answer: str):
+        now = datetime.now().isoformat()
+        today = date.today().isoformat()
+        self.conn.execute(
+            """INSERT INTO checkin_answers (checkin_type, question_key, question_text, answer, session_date, created_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (checkin_type, question_key, question_text, answer, today, now),
+        )
+        self.conn.commit()
+
+    def get_checkin_sessions(self, checkin_type: str) -> list[str]:
+        rows = self.conn.execute(
+            "SELECT DISTINCT session_date FROM checkin_answers WHERE checkin_type = ? ORDER BY session_date DESC",
+            (checkin_type,),
+        ).fetchall()
+        return [r["session_date"] for r in rows]
+
+    # --- Gift Interactions ---
+
+    def log_interaction(self, gift_name: str, action: str, gift_type: str = ""):
+        now = datetime.now().isoformat()
+        self.conn.execute(
+            "INSERT INTO gift_interactions (gift_name, action, gift_type, created_at) VALUES (?, ?, ?, ?)",
+            (gift_name, action, gift_type, now),
+        )
+        self.conn.commit()
+
+    def get_skipped_gifts(self, limit: int = 50) -> list[str]:
+        rows = self.conn.execute(
+            "SELECT DISTINCT gift_name FROM gift_interactions WHERE action = 'skipped' ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [r["gift_name"] for r in rows]
+
+    # --- Skip Month ---
+
+    def skip_month(self):
+        """Mark the current month as skipped and advance monthly reminder."""
+        today = date.today()
+        self.set_state("skipped_month", f"{today.year}-{today.month:02d}")
+        reminders = self.get_all_reminders()
+        for r in reminders:
+            if r["reminder_type"] == "monthly":
+                self.advance_reminder(r["id"])
+                break
+
+    def is_month_skipped(self) -> bool:
+        today = date.today()
+        val = self.get_state("skipped_month")
+        return val == f"{today.year}-{today.month:02d}"
 
     # --- Wizard Drafts ---
 

@@ -1226,3 +1226,69 @@ label {
     .swipe-stamp { font-size: 32px; padding: 10px 22px; }
     .swipe-btn { width: 72px; height: 72px; font-size: 30px; }
 }
+
+/* ===== Skip Month Bar ===== */
+.skip-month-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    border-left: 3px solid var(--text-muted);
+}
+
+.skip-month-bar.skipped {
+    border-left-color: var(--success);
+    opacity: 0.7;
+}
+
+.skip-month-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ===== Last-Minute Rescue Card ===== */
+.last-minute-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(83, 52, 131, 0.15) 100%);
+    border: 1px solid rgba(233, 69, 96, 0.2);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+.last-minute-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.last-minute-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.last-minute-body h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 2px;
+}
+
+.last-minute-body p {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.last-minute-card .btn {
+    width: 100%;
+}
+
+@media (min-width: 640px) {
+    .last-minute-card { flex-wrap: nowrap; }
+    .last-minute-card .btn { width: auto; }
+}

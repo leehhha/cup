@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="welcome-screen">
+    <div class="card welcome-card">
+        <div class="icon">&#9989;</div>
+        <h2>Check-In Done!</h2>
+        <p>
+            Thanks for the quick update! Your gift suggestions
+            have been refreshed based on your feedback.
+        </p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

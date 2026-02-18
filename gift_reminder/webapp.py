@@ -8,7 +8,7 @@ from urllib.parse import quote_plus
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, session, url_for
 
-from gift_reminder.data.questions import BONUS_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
+from gift_reminder.data.questions import BONUS_QUESTIONS, CHECKIN_3_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
 from gift_reminder.database import Database
 from gift_reminder.gift_engine import GiftEngine
 
@@ -144,6 +144,10 @@ def create_app(db_path=None):
         answered_keys = db.get_answered_question_keys()
         bonus_remaining = len([q for q in BONUS_QUESTIONS if q["key"] not in answered_keys])
 
+        giver = db.get_giver_profile()
+        month_skipped = db.is_month_skipped()
+        busy_handling = giver.get("busy_handling", "") if giver else ""
+
         return render_template(
             "dashboard.html",
             partner_name=partner_name,
@@ -155,6 +159,8 @@ def create_app(db_path=None):
             gifts=gifts,
             reminders=reminders,
             bonus_remaining=bonus_remaining,
+            month_skipped=month_skipped,
+            busy_handling=busy_handling,
         )
 
     # ------------------------------------------------------------------
@@ -316,6 +322,68 @@ def create_app(db_path=None):
     def update_complete():
         return render_template("update_complete.html")
 
+    # ------------------------------------------------------------------
+    # 3-month check-in
+    # ------------------------------------------------------------------
+    @app.route("/checkin3")
+    def checkin3_intro():
+        return render_template("checkin3_intro.html")
+
+    @app.route("/checkin3/<int:index>", methods=["GET", "POST"])
+    def checkin3_question(index):
+        total = len(CHECKIN_3_QUESTIONS)
+        if index < 0 or index >= total:
+            return redirect(url_for("checkin3_intro"))
+
+        question = CHECKIN_3_QUESTIONS[index]
+        answers = session.get("checkin3_answers", {})
+
+        if request.method == "POST":
+            answer = request.form.get("answer", "").strip()
+            if answer:
+                answers[question["key"]] = answer
+                session["checkin3_answers"] = answers
+
+            if index == total - 1:
+                return _finish_checkin3(db, answers)
+
+            return redirect(url_for("checkin3_question", index=index + 1))
+
+        current_answer = answers.get(question["key"], "")
+        selected_list = [s.strip() for s in current_answer.split(",")] if current_answer else []
+
+        return render_template(
+            "setup_question.html",
+            question=question,
+            index=index,
+            total=total,
+            current_answer=current_answer,
+            selected_list=selected_list,
+        )
+
+    @app.route("/checkin3/complete")
+    def checkin3_complete():
+        return render_template("checkin3_complete.html")
+
+    # ------------------------------------------------------------------
+    # Skip month & interaction tracking
+    # ------------------------------------------------------------------
+    @app.route("/api/skip-month", methods=["POST"])
+    def api_skip_month():
+        db.skip_month()
+        return jsonify(ok=True)
+
+    @app.route("/api/log-interaction", methods=["POST"])
+    def api_log_interaction():
+        data = request.get_json(silent=True) or {}
+        gift_name = data.get("name", "").strip()
+        action = data.get("action", "").strip()
+        gift_type = data.get("gift_type", "")
+        if not gift_name or action not in ("picked", "skipped", "link_click"):
+            return jsonify(ok=False, error="Invalid interaction"), 400
+        db.log_interaction(gift_name, action, gift_type)
+        return jsonify(ok=True)
+
     return app
 
 
@@ -331,7 +399,14 @@ def _finish_setup(db, answers):
     for q in SETUP_QUESTIONS:
         answer = answers.get(q["key"], "")
         if answer:
+            if q["category"] == "giver":
+                continue  # saved separately in giver_profile
             db.save_setup_answer(q["key"], q["text"], answer, q["category"])
+
+    # Save giver profile answers
+    giver_keys = [q["key"] for q in SETUP_QUESTIONS if q.get("category") == "giver"]
+    if any(answers.get(k) for k in giver_keys):
+        db.save_giver_profile(answers)
 
     db.init_reminders()
     session.pop("setup_answers", None)
@@ -351,6 +426,52 @@ def _finish_bonus(db, questions, answers):
     answered_count = len([a for a in answers.values() if a])
     session.pop("bonus_answers", None)
     return render_template("bonus_complete.html", answered=answered_count)
+
+
+def _finish_checkin3(db, answers):
+    for q in CHECKIN_3_QUESTIONS:
+        answer = answers.get(q["key"], "")
+        if answer:
+            db.save_checkin_answer("3month", q["key"], q["text"], answer)
+
+    # If budget answer changed, update giver profile
+    budget_answer = answers.get("checkin3_budget", "")
+    if budget_answer and budget_answer != "Perfect":
+        giver = db.get_giver_profile()
+        if giver:
+            giver_answers = {
+                "giver_style": giver["giver_style"],
+                "giver_time": giver["time_budget"],
+                "giver_monthly_budget": giver["monthly_budget"],
+                "giver_quarterly_budget": giver["quarterly_budget"],
+                "giver_gift_type": giver["gift_type_pref"],
+                "giver_experience_comfort": giver["experience_comfort"],
+                "giver_diy_comfort": giver["diy_comfort"],
+                "giver_busy_handling": giver["busy_handling"],
+            }
+            # Adjust budget direction based on feedback
+            if budget_answer == "I can spend more":
+                budget_map = {
+                    "Under $25": "$25 – $50",
+                    "$25 – $50": "$50 – $100",
+                    "$50 – $100": "$100+",
+                }
+                giver_answers["giver_monthly_budget"] = budget_map.get(
+                    giver["monthly_budget"], giver["monthly_budget"]
+                )
+            elif budget_answer == "I'd like to spend less":
+                budget_map = {
+                    "$100+": "$50 – $100",
+                    "$50 – $100": "$25 – $50",
+                    "$25 – $50": "Under $25",
+                }
+                giver_answers["giver_monthly_budget"] = budget_map.get(
+                    giver["monthly_budget"], giver["monthly_budget"]
+                )
+            db.save_giver_profile(giver_answers)
+
+    session.pop("checkin3_answers", None)
+    return redirect(url_for("checkin3_complete"))
 
 
 def _finish_update(db, answers):

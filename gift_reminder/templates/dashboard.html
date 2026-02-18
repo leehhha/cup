@@ -44,6 +44,18 @@
         </div>
     {% endfor %}
 
+    <!-- Skip Month -->
+    {% if not month_skipped %}
+    <div class="skip-month-bar" id="skip-month-bar">
+        <span class="skip-month-text">Too busy this month?</span>
+        <button class="btn btn-ghost btn-sm" id="btn-skip-month">Skip This Month</button>
+    </div>
+    {% else %}
+    <div class="skip-month-bar skipped">
+        <span class="skip-month-text">This month is skipped. Relax!</span>
+    </div>
+    {% endif %}
+
     <!-- Swipe Card Deck -->
     <h2 class="section-title">Gift Ideas</h2>
     <p class="section-subtitle">Swipe through personalized picks</p>
@@ -82,6 +94,18 @@
         <div class="swipe-counter" id="card-counter">1 of 8</div>
         <button class="swipe-btn swipe-btn-pick" id="btn-pick" aria-label="Select">&#10084;&#65039;</button>
     </div>
+
+    <!-- Last-Minute Rescue (shown when busy_handling = "Send me a last-minute rescue idea") -->
+    {% if busy_handling and "last-minute" in busy_handling.lower() %}
+    <div class="last-minute-card" id="last-minute-card">
+        <div class="last-minute-icon">&#9889;</div>
+        <div class="last-minute-body">
+            <h3>Last-Minute Rescue</h3>
+            <p>No time? Here are super-easy picks you can order in 2 minutes:</p>
+        </div>
+        <button class="btn btn-primary btn-sm" id="btn-last-minute">Show Rescue Ideas</button>
+    </div>
+    {% endif %}
 
     <!-- Log a Gift -->
     <h2 class="section-title">Log a Gift</h2>
@@ -432,6 +456,59 @@
         if (e.key === 'ArrowLeft') doSkip();
         else if (e.key === 'ArrowRight') doPick();
     });
+
+    // --- Interaction tracking ---
+    function logInteraction(name, action, giftType) {
+        fetch('/api/log-interaction', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: name, action: action, gift_type: giftType})
+        });
+    }
+
+    // Patch doSkip to log interaction
+    var _origDoSkip = doSkip;
+    doSkip = function() {
+        if (currentIndex < CARDS.length) {
+            var gift = CARDS[currentIndex];
+            logInteraction(gift.name, 'skipped', gift.gift_type);
+        }
+        _origDoSkip();
+    };
+
+    // --- Skip Month ---
+    var skipBtn = document.getElementById('btn-skip-month');
+    if (skipBtn) {
+        skipBtn.addEventListener('click', function() {
+            if (!confirm('Skip gifting this month?')) return;
+            fetch('/api/skip-month', {method: 'POST', headers: {'Content-Type': 'application/json'}})
+                .then(function() {
+                    var bar = document.getElementById('skip-month-bar');
+                    bar.classList.add('skipped');
+                    bar.innerHTML = '<span class="skip-month-text">This month is skipped. Relax!</span>';
+                });
+        });
+    }
+
+    // --- Last-Minute Rescue ---
+    var lmBtn = document.getElementById('btn-last-minute');
+    if (lmBtn) {
+        lmBtn.addEventListener('click', function() {
+            lmBtn.disabled = true;
+            lmBtn.textContent = 'Loading...';
+            // Reset card deck to easy picks only
+            var easyCards = CARDS.filter(function(c) { return c.effort <= 1; });
+            if (easyCards.length === 0) easyCards = CARDS.slice(0, 2);
+            CARDS = easyCards;
+            currentIndex = 0;
+            renderCard();
+            deckEmpty.style.display = 'none';
+            actions.style.display = 'flex';
+            var lmCard = document.getElementById('last-minute-card');
+            if (lmCard) lmCard.style.display = 'none';
+            window.scrollTo({top: document.getElementById('card-deck').offsetTop - 60, behavior: 'smooth'});
+        });
+    }
 
     // Boot
     renderCard();
