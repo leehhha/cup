@@ -11,7 +11,7 @@ from flask import Flask, flash, jsonify, redirect, render_template, request, ses
 from gift_reminder.data.questions import BONUS_QUESTIONS, CHECKIN_3_QUESTIONS, SETUP_QUESTIONS, UPDATE_QUESTIONS
 from gift_reminder.database import Database
 from gift_reminder.gift_engine import GiftEngine
-from gift_reminder.occasions import build_timeline
+from gift_reminder.occasions import build_carousel_data, build_timeline, occasion_to_json
 
 
 def create_app(db_path=None):
@@ -81,7 +81,9 @@ def create_app(db_path=None):
         profile = db.get_profile()
         partner_name = profile["partner_name"]
 
-        tl = build_timeline(db)
+        carousel = build_carousel_data(db)
+        cards_json = json.dumps([occasion_to_json(c) for c in carousel["cards"]])
+        next_up_index = carousel["next_up_index"]
 
         answered_keys = db.get_answered_question_keys()
         bonus_remaining = len([q for q in BONUS_QUESTIONS if q["key"] not in answered_keys])
@@ -89,9 +91,9 @@ def create_app(db_path=None):
         return render_template(
             "timeline.html",
             partner_name=partner_name,
-            next_up=tl["next_up"],
-            upcoming=tl["upcoming"],
-            past=tl["past"],
+            cards_json=cards_json,
+            next_up_index=next_up_index,
+            quick_list=carousel["quick_list"],
             bonus_remaining=bonus_remaining,
         )
 

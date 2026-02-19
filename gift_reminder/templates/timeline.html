@@ -4,7 +4,7 @@
 <!-- Header -->
 <div class="header">
     <div class="container">
-        <h1>&#127873; Gifts for {{ partner_name }}</h1>
+        <h1>&#127873; Gift Timeline</h1>
     </div>
 </div>
 
@@ -17,139 +17,44 @@
         {% endfor %}
     {% endwith %}
 
-    <!-- ====== NEXT UP ====== -->
-    {% if next_up %}
-    <div class="tl-section-label">&#128205; NEXT UP</div>
-    <div class="tl-card tl-card-next">
-        <div class="tl-card-icon">{{ next_up.icon|safe }}</div>
-        <div class="tl-card-body">
-            <div class="tl-card-label">{{ next_up.occasion_label }}</div>
-            <div class="tl-card-date">{{ next_up.date_display }}</div>
-            <div class="tl-card-days {% if next_up.days_until <= 7 %}tl-urgent{% endif %}">{{ next_up.days_label }}</div>
+    <!-- Month Navigation -->
+    <div class="month-nav" id="month-nav">
+        <button class="month-arrow month-arrow-left" id="month-prev" aria-label="Previous month">&#9664;</button>
+        <div class="month-labels">
+            <span class="month-label month-label-prev" id="month-label-prev"></span>
+            <span class="month-label month-label-current" id="month-label-current"></span>
+            <span class="month-label month-label-next" id="month-label-next"></span>
+        </div>
+        <button class="month-arrow month-arrow-right" id="month-next" aria-label="Next month">&#9654;</button>
+    </div>
+    <div class="month-dots" id="month-dots"></div>
 
-            {% if next_up.state == 'upcoming' %}
-                <div class="tl-card-actions">
-                    <form method="POST" action="{{ url_for('occasion_give_gift', occ_id=next_up.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-primary btn-sm">Give Gift</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('occasion_skip', occ_id=next_up.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-ghost btn-sm">Skip</button>
-                    </form>
-                </div>
-
-            {% elif next_up.state == 'planning' %}
-                <div class="tl-card-status">Browsing gifts...</div>
-                <div class="tl-card-actions">
-                    <a href="{{ url_for('occasion_select_gift', occ_id=next_up.id) }}" class="btn btn-primary btn-sm">Continue</a>
-                </div>
-
-            {% elif next_up.state == 'selected' %}
-                <div class="tl-card-selected">&#127775; {{ next_up.gift_selected }}</div>
-                <div class="tl-card-actions">
-                    {% if next_up.gift_purchase_link %}
-                    <a href="{{ next_up.gift_purchase_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>
-                    {% endif %}
-                    <form method="POST" action="{{ url_for('occasion_mark_given', occ_id=next_up.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-secondary btn-sm">Mark as Given</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('occasion_change_gift', occ_id=next_up.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-ghost btn-sm">Change Gift</button>
-                    </form>
-                </div>
-
-            {% elif next_up.state == 'given' %}
-                <div class="tl-card-status tl-given">&#9989; Gift Given: {{ next_up.gift_selected }}</div>
-                <div class="tl-card-actions">
-                    <a href="{{ url_for('occasion_rate', occ_id=next_up.id) }}" class="btn btn-primary btn-sm">Rate This Gift</a>
-                </div>
-            {% endif %}
+    <!-- Card Carousel -->
+    <div class="carousel-viewport" id="carousel-viewport">
+        <div class="carousel-track" id="carousel-track">
+            <!-- Cards injected by JS -->
         </div>
     </div>
-    {% endif %}
 
-    <!-- ====== UPCOMING ====== -->
-    {% if upcoming %}
-    <div class="tl-section-label">UPCOMING</div>
-    {% for occ in upcoming %}
-    <div class="tl-card">
-        <div class="tl-card-icon">{{ occ.icon|safe }}</div>
-        <div class="tl-card-body">
-            <div class="tl-card-label">{{ occ.occasion_label }}</div>
-            <div class="tl-card-date">{{ occ.date_display }}</div>
-            <div class="tl-card-days">{{ occ.days_label }}</div>
-
-            {% if occ.state == 'upcoming' %}
-                <div class="tl-card-actions">
-                    <form method="POST" action="{{ url_for('occasion_give_gift', occ_id=occ.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-primary btn-sm">Give Gift</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('occasion_skip', occ_id=occ.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-ghost btn-sm">Skip</button>
-                    </form>
-                </div>
-
-            {% elif occ.state == 'planning' %}
-                <div class="tl-card-status">Browsing gifts...</div>
-                <div class="tl-card-actions">
-                    <a href="{{ url_for('occasion_select_gift', occ_id=occ.id) }}" class="btn btn-secondary btn-sm">Continue</a>
-                </div>
-
-            {% elif occ.state == 'selected' %}
-                <div class="tl-card-selected">&#127775; {{ occ.gift_selected }}</div>
-                <div class="tl-card-actions">
-                    {% if occ.gift_purchase_link %}
-                    <a href="{{ occ.gift_purchase_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>
-                    {% endif %}
-                    <form method="POST" action="{{ url_for('occasion_mark_given', occ_id=occ.id) }}" style="display:inline">
-                        <button type="submit" class="btn btn-secondary btn-sm">Mark as Given</button>
-                    </form>
-                </div>
-
-            {% elif occ.state == 'given' %}
-                <div class="tl-card-status tl-given">&#9989; Gift Given: {{ occ.gift_selected }}</div>
-                <div class="tl-card-actions">
-                    <a href="{{ url_for('occasion_rate', occ_id=occ.id) }}" class="btn btn-secondary btn-sm">Rate This Gift</a>
-                </div>
-            {% endif %}
+    <!-- Quick List -->
+    {% if quick_list %}
+    <div class="quick-list">
+        <div class="quick-list-header">
+            <span class="quick-list-title">UPCOMING</span>
         </div>
+        {% for occ in quick_list %}
+        <div class="quick-list-row" data-occ-id="{{ occ.id }}">
+            <span class="quick-list-icon">{{ occ.icon|safe }}</span>
+            <span class="quick-list-date">{{ occ.date_display }}</span>
+            <span class="quick-list-name">{{ occ.occasion_label }}</span>
+            <span class="quick-list-days {% if occ.days_until <= 7 %}urgent{% endif %}">{{ occ.days_label }}</span>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-    {% endif %}
-
-    <!-- ====== PAST GIFTS ====== -->
-    {% if past %}
-    <div class="tl-section-label">PAST GIFTS</div>
-    {% for occ in past %}
-    <div class="tl-card tl-card-past">
-        <div class="tl-card-icon">
-            {% if occ.state == 'complete' %}&#9989;{% else %}&#8856;{% endif %}
-        </div>
-        <div class="tl-card-body">
-            <div class="tl-card-label">{{ occ.occasion_label }}</div>
-            <div class="tl-card-date text-muted">{{ occ.date_display }}</div>
-            {% if occ.state == 'complete' and occ.gift_selected %}
-                <div class="tl-past-gift">{{ occ.gift_selected }}</div>
-                {% if occ.rating %}
-                    <div class="tl-past-rating">
-                        {% set emojis = {1: "&#128542;", 2: "&#128577;", 3: "&#128528;", 4: "&#128522;", 5: "&#128525;"} %}
-                        {{ emojis.get(occ.rating.rating, "")|safe }}
-                        <span class="star-display">{{ "&#9733;" * occ.rating.rating|int }}{{ "&#9734;" * (5 - occ.rating.rating|int) }}</span>
-                        {% if occ.rating.feedback_text %}
-                            <span class="tl-past-feedback">{{ occ.rating.feedback_text }}</span>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            {% elif occ.state == 'skipped' %}
-                <div class="tl-past-gift text-muted">Skipped</div>
-            {% endif %}
-        </div>
-    </div>
-    {% endfor %}
     {% endif %}
 
     <!-- Bonus Questions CTA -->
     {% if bonus_remaining > 0 %}
-    <div class="tl-section-label">IMPROVE SUGGESTIONS</div>
     <div class="bonus-cta">
         <div class="bonus-cta-content">
             <div class="bonus-cta-icon">&#128161;</div>
@@ -163,4 +68,305 @@
 
     <div style="height: 32px"></div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var CARDS = {{ cards_json|safe }};
+    var NEXT_UP_INDEX = {{ next_up_index }};
+    var currentIndex = NEXT_UP_INDEX;
+
+    // DOM
+    var track = document.getElementById('carousel-track');
+    var viewport = document.getElementById('carousel-viewport');
+    var monthPrev = document.getElementById('month-label-prev');
+    var monthCurrent = document.getElementById('month-label-current');
+    var monthNext = document.getElementById('month-label-next');
+    var monthDots = document.getElementById('month-dots');
+    var btnPrev = document.getElementById('month-prev');
+    var btnNext = document.getElementById('month-next');
+
+    // Month names
+    var MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+
+    function monthLabel(dateStr) {
+        var parts = dateStr.split('-');
+        return MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+    }
+
+    function shortMonth(dateStr) {
+        var parts = dateStr.split('-');
+        return MONTHS[parseInt(parts[1], 10) - 1].substring(0, 3);
+    }
+
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    // Stars HTML
+    function starsHtml(rating) {
+        var s = '';
+        for (var i = 0; i < 5; i++) s += i < rating ? '&#9733;' : '&#9734;';
+        return s;
+    }
+
+    // Emoji for rating
+    function ratingEmoji(r) {
+        return {5:'&#128525;',4:'&#128522;',3:'&#128528;',2:'&#128577;',1:'&#128542;'}[r] || '';
+    }
+
+    // Build single card HTML
+    function buildCard(card, position) {
+        var cls = 'crs-card crs-card-' + position;
+        if (card.is_next_up) cls += ' crs-card-nextup';
+        if (card.state === 'complete' || card.state === 'skipped') cls += ' crs-card-past';
+
+        var html = '<div class="' + cls + '" data-idx="' + card._idx + '">';
+
+        // Next-up badge
+        if (card.is_next_up) {
+            html += '<div class="crs-badge">&#128205; NEXT UP</div>';
+        }
+
+        // Icon + label
+        html += '<div class="crs-icon">' + card.icon + '</div>';
+        html += '<div class="crs-label">' + escHtml(card.label) + '</div>';
+        html += '<div class="crs-date">' + escHtml(card.date_display) + '</div>';
+
+        // Days
+        var daysClass = 'crs-days';
+        if (card.days_until >= 0 && card.days_until <= 7) daysClass += ' crs-urgent';
+        html += '<div class="' + daysClass + '">' + escHtml(card.days_label) + '</div>';
+
+        // State-specific content
+        if (card.state === 'upcoming') {
+            html += '<div class="crs-actions">';
+            html += '<form method="POST" action="/occasion/' + card.id + '/give-gift" style="display:inline">';
+            html += '<button type="submit" class="btn btn-primary btn-sm">Give Gift</button></form>';
+            html += '<form method="POST" action="/occasion/' + card.id + '/skip" style="display:inline">';
+            html += '<button type="submit" class="btn btn-ghost btn-sm">Skip</button></form>';
+            html += '</div>';
+        } else if (card.state === 'planning') {
+            html += '<div class="crs-status">Browsing gifts...</div>';
+            html += '<div class="crs-actions">';
+            html += '<a href="/occasion/' + card.id + '/select-gift" class="btn btn-primary btn-sm">Continue</a>';
+            html += '</div>';
+        } else if (card.state === 'selected') {
+            html += '<div class="crs-selected">&#127775; ' + escHtml(card.gift_selected) + '</div>';
+            html += '<div class="crs-actions">';
+            if (card.gift_purchase_link) {
+                html += '<a href="' + escHtml(card.gift_purchase_link) + '" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>';
+            }
+            html += '<form method="POST" action="/occasion/' + card.id + '/mark-given" style="display:inline">';
+            html += '<button type="submit" class="btn btn-secondary btn-sm">Mark Given</button></form>';
+            html += '<form method="POST" action="/occasion/' + card.id + '/change-gift" style="display:inline">';
+            html += '<button type="submit" class="btn btn-ghost btn-sm">Change</button></form>';
+            html += '</div>';
+        } else if (card.state === 'given') {
+            html += '<div class="crs-given">&#9989; Gift Given</div>';
+            html += '<div class="crs-selected">' + escHtml(card.gift_selected) + '</div>';
+            html += '<div class="crs-actions">';
+            html += '<a href="/occasion/' + card.id + '/rate" class="btn btn-primary btn-sm">Rate This Gift</a>';
+            html += '</div>';
+        } else if (card.state === 'complete') {
+            html += '<div class="crs-given">&#9989; GIVEN</div>';
+            if (card.gift_selected) {
+                html += '<div class="crs-selected">' + escHtml(card.gift_selected) + '</div>';
+            }
+            if (card.rating_val > 0) {
+                html += '<div class="crs-rating">';
+                html += '<span>' + ratingEmoji(card.rating_val) + '</span>';
+                html += '<span class="star-display">' + starsHtml(card.rating_val) + '</span>';
+                html += '</div>';
+                if (card.feedback) {
+                    html += '<div class="crs-feedback">' + escHtml(card.feedback) + '</div>';
+                }
+            }
+        } else if (card.state === 'skipped') {
+            html += '<div class="crs-skipped">&#8856; Skipped</div>';
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    // Render 3 cards: [prev] [center] [next]
+    function render() {
+        // Clamp index
+        if (currentIndex < 0) currentIndex = 0;
+        if (currentIndex >= CARDS.length) currentIndex = CARDS.length - 1;
+
+        var html = '';
+        // Previous card (left, faded)
+        if (currentIndex > 0) {
+            CARDS[currentIndex - 1]._idx = currentIndex - 1;
+            html += buildCard(CARDS[currentIndex - 1], 'left');
+        } else {
+            html += '<div class="crs-card crs-card-left crs-card-empty"></div>';
+        }
+
+        // Center card
+        CARDS[currentIndex]._idx = currentIndex;
+        html += buildCard(CARDS[currentIndex], 'center');
+
+        // Next card (right, faded)
+        if (currentIndex < CARDS.length - 1) {
+            CARDS[currentIndex + 1]._idx = currentIndex + 1;
+            html += buildCard(CARDS[currentIndex + 1], 'right');
+        } else {
+            html += '<div class="crs-card crs-card-right crs-card-empty"></div>';
+        }
+
+        track.innerHTML = html;
+        updateMonthNav();
+        updateDots();
+    }
+
+    // Update month navigation labels
+    function updateMonthNav() {
+        var card = CARDS[currentIndex];
+        monthCurrent.textContent = monthLabel(card.date);
+        monthCurrent.classList.add('month-fade');
+        setTimeout(function() { monthCurrent.classList.remove('month-fade'); }, 10);
+
+        if (currentIndex > 0) {
+            monthPrev.textContent = shortMonth(CARDS[currentIndex - 1].date);
+            monthPrev.style.visibility = 'visible';
+        } else {
+            monthPrev.style.visibility = 'hidden';
+        }
+        if (currentIndex < CARDS.length - 1) {
+            monthNext.textContent = shortMonth(CARDS[currentIndex + 1].date);
+            monthNext.style.visibility = 'visible';
+        } else {
+            monthNext.style.visibility = 'hidden';
+        }
+
+        btnPrev.disabled = currentIndex <= 0;
+        btnNext.disabled = currentIndex >= CARDS.length - 1;
+    }
+
+    // Render month dots
+    function updateDots() {
+        // Show max 12 dots (one per unique month)
+        var months = [];
+        var monthIndexMap = {};
+        for (var i = 0; i < CARDS.length; i++) {
+            var mk = CARDS[i].month_key;
+            if (!monthIndexMap.hasOwnProperty(mk)) {
+                monthIndexMap[mk] = i;
+                months.push(mk);
+            }
+        }
+
+        var currentMk = CARDS[currentIndex].month_key;
+        var dotsHtml = '';
+        var maxDots = Math.min(months.length, 12);
+        for (var j = 0; j < maxDots; j++) {
+            var active = months[j] === currentMk ? ' dot-active' : '';
+            dotsHtml += '<span class="dot' + active + '" data-month-idx="' + monthIndexMap[months[j]] + '"></span>';
+        }
+        monthDots.innerHTML = dotsHtml;
+
+        // Dot click handlers
+        monthDots.querySelectorAll('.dot').forEach(function(dot) {
+            dot.addEventListener('click', function() {
+                var idx = parseInt(this.getAttribute('data-month-idx'), 10);
+                navigateTo(idx);
+            });
+        });
+    }
+
+    function navigateTo(idx) {
+        if (idx < 0 || idx >= CARDS.length || idx === currentIndex) return;
+        currentIndex = idx;
+        render();
+    }
+
+    // Month arrows
+    btnPrev.addEventListener('click', function() { navigateTo(currentIndex - 1); });
+    btnNext.addEventListener('click', function() { navigateTo(currentIndex + 1); });
+
+    // Quick list row clicks: jump to that card
+    document.querySelectorAll('.quick-list-row').forEach(function(row) {
+        row.addEventListener('click', function() {
+            var occId = parseInt(this.getAttribute('data-occ-id'), 10);
+            for (var i = 0; i < CARDS.length; i++) {
+                if (CARDS[i].id === occId) {
+                    navigateTo(i);
+                    viewport.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    break;
+                }
+            }
+        });
+    });
+
+    // ------ Touch / Mouse swipe on carousel ------
+    var startX = 0, startY = 0, dragX = 0, dragging = false;
+    var SWIPE_THRESHOLD = 60;
+
+    viewport.addEventListener('touchstart', function(e) {
+        dragging = true;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        dragX = 0;
+    }, {passive: true});
+
+    viewport.addEventListener('touchmove', function(e) {
+        if (!dragging) return;
+        var dx = e.touches[0].clientX - startX;
+        var dy = e.touches[0].clientY - startY;
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dx) < 30) return;
+        e.preventDefault();
+        dragX = dx;
+        // Visual feedback: shift track
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(' + (dx * 0.3) + 'px)';
+    }, {passive: false});
+
+    viewport.addEventListener('touchend', function() {
+        if (!dragging) return;
+        dragging = false;
+        track.style.transition = 'transform 0.3s ease';
+        track.style.transform = '';
+        if (dragX < -SWIPE_THRESHOLD) navigateTo(currentIndex + 1);
+        else if (dragX > SWIPE_THRESHOLD) navigateTo(currentIndex - 1);
+    });
+
+    // Mouse drag for desktop
+    viewport.addEventListener('mousedown', function(e) {
+        dragging = true;
+        startX = e.clientX;
+        dragX = 0;
+        e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+        if (!dragging) return;
+        dragX = e.clientX - startX;
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(' + (dragX * 0.3) + 'px)';
+    });
+    document.addEventListener('mouseup', function() {
+        if (!dragging) return;
+        dragging = false;
+        track.style.transition = 'transform 0.3s ease';
+        track.style.transform = '';
+        if (dragX < -SWIPE_THRESHOLD) navigateTo(currentIndex + 1);
+        else if (dragX > SWIPE_THRESHOLD) navigateTo(currentIndex - 1);
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') navigateTo(currentIndex - 1);
+        else if (e.key === 'ArrowRight') navigateTo(currentIndex + 1);
+    });
+
+    // Boot
+    if (CARDS.length > 0) render();
+})();
+</script>
 {% endblock %}

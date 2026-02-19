@@ -140,20 +140,7 @@ def build_timeline(db) -> dict:
     next_up = None
     upcoming = []
     for occ in all_upcoming:
-        occ_date = date.fromisoformat(occ["occasion_date"])
-        days = (occ_date - today).days
-        occ["days_until"] = days
-        occ["date_display"] = occ_date.strftime("%B %-d, %Y")
-        occ["icon"] = _icon_for_type(occ["occasion_type"])
-
-        if days < 0:
-            occ["days_label"] = "Overdue!"
-        elif days == 0:
-            occ["days_label"] = "Today!"
-        elif days == 1:
-            occ["days_label"] = "Tomorrow!"
-        else:
-            occ["days_label"] = f"in {days} days"
+        _annotate_occasion(occ, today)
 
         if occ["state"] in ("upcoming", "planning", "selected", "given"):
             if next_up is None:
@@ -164,13 +151,119 @@ def build_timeline(db) -> dict:
     # Past occasions with ratings
     past = db.get_past_occasions(10)
     for occ in past:
-        occ["icon"] = _icon_for_type(occ["occasion_type"])
-        occ_date = date.fromisoformat(occ["occasion_date"])
-        occ["date_display"] = occ_date.strftime("%B %-d, %Y")
+        _annotate_occasion(occ, today)
         rating = db.get_rating_for_occasion(occ["id"])
         occ["rating"] = rating
 
     return {"next_up": next_up, "upcoming": upcoming, "past": past}
+
+
+def build_carousel_data(db) -> dict:
+    """Build a flat list of ALL occasions for the horizontal carousel.
+
+    Returns: {
+        "cards": [occasion dicts sorted by date],
+        "next_up_index": int (index of the "next up" card),
+        "quick_list": [next 5 upcoming occasions for the bottom list],
+    }
+    """
+    today = date.today()
+
+    # Generate/refresh upcoming occasions
+    all_upcoming = generate_upcoming_occasions(db)
+
+    # Get past occasions
+    past = db.get_past_occasions(20)
+
+    # Combine and sort by date
+    all_occasions = list(past) + list(all_upcoming)
+
+    # Deduplicate by id
+    seen_ids = set()
+    deduped = []
+    for occ in all_occasions:
+        if occ["id"] not in seen_ids:
+            seen_ids.add(occ["id"])
+            deduped.append(occ)
+    deduped.sort(key=lambda o: o["occasion_date"])
+
+    # Annotate every card
+    next_up_index = 0
+    found_next = False
+    quick_list = []
+
+    for i, occ in enumerate(deduped):
+        _annotate_occasion(occ, today)
+        rating = db.get_rating_for_occasion(occ["id"])
+        if rating:
+            occ["rating_val"] = rating["rating"]
+            occ["feedback"] = rating.get("feedback_text", "")
+        else:
+            occ["rating_val"] = 0
+            occ["feedback"] = ""
+
+        # Mark the first active future occasion as next_up
+        if not found_next and occ["state"] in ("upcoming", "planning", "selected", "given"):
+            next_up_index = i
+            found_next = True
+            occ["is_next_up"] = True
+        else:
+            occ["is_next_up"] = False
+
+        # Build quick list (active occasions after today, max 5)
+        if (occ["state"] in ("upcoming", "planning", "selected", "given")
+                and occ["days_until"] >= 0 and len(quick_list) < 5
+                and not occ.get("is_next_up")):
+            quick_list.append(occ)
+
+    # If no active occasion found, default to last card
+    if not found_next and deduped:
+        next_up_index = len(deduped) - 1
+
+    return {
+        "cards": deduped,
+        "next_up_index": next_up_index,
+        "quick_list": quick_list,
+    }
+
+
+def occasion_to_json(occ: dict) -> dict:
+    """Convert an occasion dict to a JSON-safe dict for the carousel."""
+    return {
+        "id": occ["id"],
+        "type": occ["occasion_type"],
+        "label": occ["occasion_label"],
+        "date": occ["occasion_date"],
+        "month_key": occ["occasion_date"][:7],  # "2026-03"
+        "state": occ["state"],
+        "icon": occ["icon"],
+        "date_display": occ["date_display"],
+        "days_until": occ["days_until"],
+        "days_label": occ["days_label"],
+        "is_next_up": occ.get("is_next_up", False),
+        "gift_selected": occ.get("gift_selected") or "",
+        "gift_purchase_link": occ.get("gift_purchase_link") or "",
+        "rating_val": occ.get("rating_val", 0),
+        "feedback": occ.get("feedback", ""),
+    }
+
+
+def _annotate_occasion(occ: dict, today: date):
+    """Add display fields to an occasion dict."""
+    occ_date = date.fromisoformat(occ["occasion_date"])
+    days = (occ_date - today).days
+    occ["days_until"] = days
+    occ["date_display"] = occ_date.strftime("%B %-d, %Y")
+    occ["icon"] = _icon_for_type(occ["occasion_type"])
+
+    if days < 0:
+        occ["days_label"] = f"{abs(days)} days ago"
+    elif days == 0:
+        occ["days_label"] = "Today!"
+    elif days == 1:
+        occ["days_label"] = "Tomorrow!"
+    else:
+        occ["days_label"] = f"in {days} days"
 
 
 def _icon_for_type(occasion_type: str) -> str:
