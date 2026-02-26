@@ -5,23 +5,26 @@
    ============================================== */
 
 :root {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-card: #0f3460;
-    --bg-input: #1a1a2e;
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f5f5f7;
     --accent: #e94560;
-    --accent-hover: #c73e54;
-    --accent-soft: #533483;
-    --text-primary: #ffffff;
-    --text-secondary: #a0a0b8;
-    --text-muted: #6c6c80;
-    --success: #4ecca3;
-    --warning: #ffc107;
-    --border: #2a2a4a;
-    --star-filled: #ffc107;
-    --star-empty: #3a3a5a;
+    --accent-hover: #d63b55;
+    --accent-soft: #fce4ec;
+    --text-primary: #1a1a2e;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --border: #e5e7eb;
+    --star-filled: #f59e0b;
+    --star-empty: #d1d5db;
     --radius: 12px;
     --radius-sm: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
     /* Safe area insets for notched phones */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -79,6 +82,7 @@ body {
     top: 0;
     z-index: 100;
     border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
 .header .container {
@@ -117,6 +121,8 @@ body {
     border-radius: var(--radius);
     padding: 16px;
     margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
 }
 
 @media (min-width: 640px) {
@@ -159,7 +165,7 @@ body {
 
 .btn-primary {
     background: var(--accent);
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .btn-primary:hover {
@@ -170,11 +176,13 @@ body {
     background: var(--bg-card);
     color: var(--text-primary);
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-secondary:hover {
     background: var(--accent-soft);
-    border-color: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .btn-ghost {
@@ -183,7 +191,7 @@ body {
 }
 
 .btn-ghost:hover {
-    background: var(--bg-card);
+    background: var(--bg-input);
     color: var(--text-primary);
 }
 
@@ -202,7 +210,7 @@ body {
 
 .btn-warning {
     background: var(--warning);
-    color: #1a1a2e;
+    color: #ffffff;
 }
 
 .btn-warning:hover {
@@ -292,7 +300,7 @@ label {
 .option-btn.selected {
     background: var(--accent);
     border-color: var(--accent);
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 @media (min-width: 640px) {
@@ -371,7 +379,7 @@ label {
 
 .progress-bar {
     height: 6px;
-    background: var(--bg-secondary);
+    background: var(--border);
     border-radius: 3px;
     overflow: hidden;
 }
@@ -421,12 +429,12 @@ label {
 
 .badge-quarterly {
     background: var(--accent);
-    color: var(--text-primary);
+    color: #ffffff;
 }
 
 .badge-monthly {
     background: var(--accent-soft);
-    color: var(--text-primary);
+    color: var(--accent);
 }
 
 /* ===== Alert Banner ===== */
@@ -440,7 +448,7 @@ label {
 }
 
 .alert-warning {
-    background: var(--bg-card);
+    background: #fffbeb;
     border-left: 4px solid var(--warning);
 }
 
@@ -896,7 +904,7 @@ label {
 
 .swipe-card {
     position: relative;
-    background: linear-gradient(145deg, #0f3460 0%, #1a1a4e 100%);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 32px 24px;
@@ -905,6 +913,7 @@ label {
     touch-action: pan-y;
     will-change: transform;
     transform-origin: center center;
+    box-shadow: var(--shadow-md);
 }
 
 .swipe-card:active {
@@ -1053,6 +1062,7 @@ label {
     -webkit-tap-highlight-color: transparent;
     padding: 0;
     line-height: 1;
+    box-shadow: var(--shadow-sm);
 }
 
 .swipe-btn:active {
@@ -1111,7 +1121,7 @@ label {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background: rgba(15, 52, 96, 0.95);
+    background: rgba(255, 255, 255, 0.97);
     border-radius: 20px;
     z-index: 20;
     animation: celebrationPop 0.4s ease;
@@ -1146,7 +1156,7 @@ label {
     width: 100%;
     padding: 12px 20px;
     background: var(--accent);
-    color: var(--text-primary);
+    color: #ffffff;
     font-size: 14px;
     font-weight: 700;
     border-radius: var(--radius);
@@ -1256,8 +1266,8 @@ label {
     align-items: center;
     gap: 10px;
     padding: 14px 16px;
-    background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(83, 52, 131, 0.15) 100%);
-    border: 1px solid rgba(233, 69, 96, 0.2);
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.06) 0%, rgba(233, 69, 96, 0.02) 100%);
+    border: 1px solid rgba(233, 69, 96, 0.15);
     border-radius: var(--radius);
     margin-bottom: 16px;
 }
@@ -1373,7 +1383,7 @@ label {
 
 .tl-card-status {
     font-size: 13px;
-    color: var(--accent-soft);
+    color: var(--accent);
     margin-top: 6px;
     font-style: italic;
 }
@@ -1637,6 +1647,7 @@ label {
     text-align: center;
     transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
 .crs-card-empty {
@@ -1656,6 +1667,7 @@ label {
     transform: scale(1);
     opacity: 1;
     z-index: 10;
+    box-shadow: var(--shadow-md);
 }
 
 /* Next-up glow on center card */
@@ -1667,7 +1679,7 @@ label {
 
 /* Past cards: muted */
 .crs-card-past {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-input);
 }
 
 /* Next-up badge */
@@ -1726,7 +1738,7 @@ label {
 
 .crs-status {
     font-size: 13px;
-    color: var(--accent-soft);
+    color: var(--accent);
     font-style: italic;
     margin-bottom: 4px;
 }
@@ -1776,6 +1788,8 @@ label {
     background: var(--bg-card);
     border-radius: var(--radius);
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
 }
 
 .quick-list-header {
@@ -1806,7 +1820,7 @@ label {
 }
 
 .quick-list-row:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-input);
 }
 
 .quick-list-icon {
