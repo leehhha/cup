@@ -1516,7 +1516,10 @@ label {
 }
 
 /* ====================================================================
-   HORIZONTAL CARD CAROUSEL
+   HORIZONTAL CARD CAROUSEL — Tiered Cards
+   - 0-30 days:  Full "NEXT UP" card (large, pink border)
+   - 31-90 days: Mini cards (emoji + days countdown)
+   - 90+ days:   Tiny dots (tap to expand)
    ==================================================================== */
 
 /* ===== Month Navigation ===== */
@@ -1626,70 +1629,45 @@ label {
 
 .carousel-track {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     gap: 12px;
     transition: transform 0.3s ease;
-    min-height: 340px;
+    min-height: 440px;
+    padding-bottom: 8px;
 }
 
-/* ===== Carousel Cards ===== */
-.crs-card {
-    flex: 0 0 240px;
-    min-height: 300px;
+/* ===== FULL CARD (Next Up, 0-30 days) ===== */
+.crs-card-full {
+    flex: 0 0 280px;
+    min-height: 420px;
     background: var(--bg-card);
-    border-radius: 16px;
-    padding: 24px 20px;
+    border-radius: 20px;
+    padding: 24px;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 16px rgba(233, 69, 96, 0.15);
 }
 
-.crs-card-empty {
-    visibility: hidden;
-}
-
-/* Side cards: smaller, faded */
-.crs-card-left,
-.crs-card-right {
-    transform: scale(0.85);
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-/* Center card: full size */
-.crs-card-center {
-    transform: scale(1);
-    opacity: 1;
-    z-index: 10;
-    box-shadow: var(--shadow-md);
-}
-
-/* Next-up glow on center card */
-.crs-card-center.crs-card-nextup {
-    border: 2px solid rgba(233, 69, 96, 0.5);
-    box-shadow: 0 10px 40px rgba(233, 69, 96, 0.25);
-    transform: scale(1.02);
-}
-
-/* Past cards: muted */
-.crs-card-past {
-    background: var(--bg-input);
-}
+.crs-card-full .crs-icon { font-size: 48px; margin-bottom: 12px; line-height: 1; }
+.crs-card-full .crs-label { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.crs-card-full .crs-date { font-size: 14px; color: var(--text-secondary); margin-bottom: 2px; }
+.crs-card-full .crs-days { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+.crs-card-full .crs-days.crs-urgent { color: var(--warning); }
 
 /* Next-up badge */
 .crs-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 12px;
+    right: 12px;
     background: var(--accent);
     color: #fff;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 12px;
     font-size: 10px;
     font-weight: 700;
@@ -1697,43 +1675,14 @@ label {
     letter-spacing: 0.5px;
 }
 
-/* Card content elements */
-.crs-icon {
-    font-size: 36px;
-    margin-bottom: 8px;
-    line-height: 1;
-}
-
-.crs-label {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 2px;
-}
-
-.crs-date {
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-.crs-days {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-}
-
-.crs-days.crs-urgent {
-    color: var(--warning);
-    font-weight: 600;
-}
-
+/* Actions inside full card */
 .crs-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     justify-content: center;
     margin-top: auto;
-    padding-top: 10px;
+    padding-top: 12px;
 }
 
 .crs-status {
@@ -1776,10 +1725,223 @@ label {
     font-size: 11px;
     color: var(--text-secondary);
     font-style: italic;
-    max-width: 180px;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ===== MINI CARD (31-90 days) ===== */
+.crs-card-mini {
+    flex: 0 0 80px;
+    height: 100px;
+    background: var(--bg-card);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.crs-card-mini:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.crs-card-mini .crs-mini-emoji {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.crs-card-mini .crs-mini-days {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Expanded mini card -> becomes full-size */
+.crs-card-mini.expanded {
+    flex: 0 0 280px;
+    height: auto;
+    min-height: 420px;
+    padding: 24px;
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow-md);
+    cursor: default;
+}
+
+.crs-card-mini.expanded .crs-mini-emoji,
+.crs-card-mini.expanded .crs-mini-days {
+    display: none;
+}
+
+.crs-card-mini .crs-expand-content {
+    display: none;
+}
+
+.crs-card-mini.expanded .crs-expand-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+.crs-expand-content .crs-icon { font-size: 40px; margin-bottom: 10px; line-height: 1; }
+.crs-expand-content .crs-label { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+.crs-expand-content .crs-date { font-size: 13px; color: var(--text-secondary); margin-bottom: 2px; }
+.crs-expand-content .crs-days { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+.crs-expand-content .crs-days.crs-urgent { color: var(--warning); font-weight: 600; }
+
+/* Close button on expanded mini card */
+.crs-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--bg-input);
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 16px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.crs-close-btn:hover {
+    background: var(--border);
+    color: var(--text-primary);
+}
+
+/* ===== DOT CARD (90+ days) ===== */
+.crs-card-dot {
+    flex: 0 0 24px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.crs-card-dot:hover {
+    background: var(--text-muted);
+    transform: scale(1.3);
+}
+
+/* Dot tooltip on hover */
+.crs-dot-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-primary);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.crs-card-dot:hover .crs-dot-tooltip {
+    opacity: 1;
+}
+
+.crs-dot-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text-primary);
+}
+
+/* Expanded dot -> becomes full-size */
+.crs-card-dot.expanded {
+    flex: 0 0 280px;
+    height: auto;
+    min-height: 420px;
+    border-radius: 20px;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow-md);
+    cursor: default;
+}
+
+.crs-card-dot.expanded .crs-dot-tooltip {
+    display: none;
+}
+
+.crs-card-dot .crs-expand-content {
+    display: none;
+}
+
+.crs-card-dot.expanded .crs-expand-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+}
+
+/* ===== PAST CARD (completed / skipped) ===== */
+.crs-card-full.crs-card-past {
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+    background: var(--bg-input);
+    opacity: 0.8;
+}
+
+.crs-card-mini.crs-card-past {
+    background: var(--bg-input);
+    opacity: 0.6;
+}
+
+/* ===== Section Labels ===== */
+.crs-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    padding: 0 4px 6px;
+    align-self: flex-end;
+}
+
+/* ===== Tier group wrappers ===== */
+.crs-tier-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.crs-tier-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 4px;
 }
 
 /* ===== Quick List ===== */
@@ -1861,13 +2023,21 @@ label {
 
 /* ===== Carousel Responsive ===== */
 
-/* Mobile: show ~1.5 cards */
+/* Mobile */
 @media (max-width: 599px) {
-    .carousel-track { gap: 8px; }
-    .crs-card { flex: 0 0 220px; min-height: 280px; padding: 20px 16px; }
-    .crs-card-left, .crs-card-right { flex: 0 0 60px; min-height: 280px; overflow: hidden; }
-    .crs-icon { font-size: 30px; }
-    .crs-label { font-size: 14px; }
+    .carousel-track { gap: 8px; min-height: 380px; }
+    .crs-card-full { flex: 0 0 260px; min-height: 380px; padding: 20px 16px; }
+    .crs-card-full .crs-icon { font-size: 40px; }
+    .crs-card-full .crs-label { font-size: 16px; }
+    .crs-card-full .crs-days { font-size: 18px; }
+    .crs-card-mini { flex: 0 0 68px; height: 88px; padding: 10px; }
+    .crs-card-mini .crs-mini-emoji { font-size: 28px; }
+    .crs-card-mini .crs-mini-days { font-size: 12px; }
+    .crs-card-mini.expanded,
+    .crs-card-dot.expanded { flex: 0 0 260px; min-height: 380px; padding: 20px 16px; }
+    .crs-card-dot { flex: 0 0 20px; height: 20px; }
+    .crs-tier-group { gap: 6px; }
+    .crs-tier-dots { gap: 6px; }
     .month-label-current { font-size: 14px; }
     .month-labels { gap: 8px; }
     .quick-list-date { display: none; }
@@ -1875,14 +2045,18 @@ label {
 
 /* Tablet */
 @media (min-width: 600px) and (max-width: 899px) {
-    .crs-card { flex: 0 0 260px; }
+    .crs-card-full { flex: 0 0 280px; }
+    .crs-card-mini.expanded,
+    .crs-card-dot.expanded { flex: 0 0 280px; }
 }
 
 /* Desktop */
 @media (min-width: 900px) {
-    .carousel-track { gap: 20px; }
-    .crs-card { flex: 0 0 280px; min-height: 340px; }
-    .crs-icon { font-size: 40px; }
-    .crs-label { font-size: 18px; }
+    .carousel-track { gap: 16px; min-height: 460px; }
+    .crs-card-full { flex: 0 0 300px; min-height: 440px; }
+    .crs-card-full .crs-icon { font-size: 52px; }
+    .crs-card-full .crs-label { font-size: 20px; }
+    .crs-card-mini.expanded,
+    .crs-card-dot.expanded { flex: 0 0 300px; min-height: 440px; }
     .month-label-current { font-size: 18px; }
 }
