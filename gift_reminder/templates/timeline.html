@@ -133,9 +133,16 @@
     // NEXT UP or active state -> 'full' (only ONE prominent card)
     // 0-90 days  -> 'mini'
     // 90+ days   -> 'dot'
-    function cardTier(card) {
-        if (card.is_next_up) return 'full';
-        if (card.state === 'planning' || card.state === 'selected' || card.state === 'given') return 'full';
+    // When expandedIdx is set, demote other full cards to mini
+    function cardTier(card, idx) {
+        var isNaturalFull = card.is_next_up ||
+            card.state === 'planning' || card.state === 'selected' || card.state === 'given';
+
+        // If another card is expanded, demote this natural-full card to mini
+        if (isNaturalFull && expandedIdx !== null && expandedIdx !== idx) {
+            return 'mini';
+        }
+        if (isNaturalFull) return 'full';
         var d = card.days_until;
         if (d <= 90) return 'mini';
         return 'dot';
@@ -254,11 +261,12 @@
         return html;
     }
 
-    // Build a MINI card (31-90 days)
-    function buildMiniCard(card, idx) {
+    // Build a MINI card (31-90 days, or demoted from full)
+    function buildMiniCard(card, idx, isDemoted) {
         var isExpanded = expandedIdx === idx;
         var cls = 'crs-card-mini';
         if (isExpanded) cls += ' expanded';
+        if (isDemoted) cls += ' crs-demoted';
 
         var html = '<div class="' + cls + '" data-idx="' + idx + '">';
         // Minimized content (emoji + days)
@@ -297,12 +305,15 @@
 
         for (var i = 0; i < futureCards.length; i++) {
             var card = futureCards[i];
-            var tier = cardTier(card);
+            var tier = cardTier(card, i);
+            // Track if this card was demoted from full to mini
+            var isDemoted = (tier === 'mini') && (card.is_next_up ||
+                card.state === 'planning' || card.state === 'selected' || card.state === 'given');
 
             if (tier === 'full') {
                 html += buildFullCard(card, i);
             } else if (tier === 'mini') {
-                html += buildMiniCard(card, i);
+                html += buildMiniCard(card, i, isDemoted);
             } else {
                 html += buildDotCard(card, i);
             }
@@ -313,18 +324,24 @@
         updateMonthNav();
         updateDots();
 
-        // Scroll the next-up card into view within the viewport
+        // Scroll the focused card into view (expanded card or next-up)
         setTimeout(function() {
-            var nextUpEl = track.querySelector('.crs-card-nextup');
-            if (nextUpEl) {
-                nextUpEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            var focusEl = null;
+            if (expandedIdx !== null) {
+                focusEl = track.querySelector('[data-idx="' + expandedIdx + '"]');
+            }
+            if (!focusEl) {
+                focusEl = track.querySelector('.crs-card-nextup');
+            }
+            if (focusEl) {
+                focusEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
             }
         }, 50);
     }
 
-    // Attach click handlers for mini/dot expansion
+    // Attach click handlers for card expansion (only one enlarged at a time)
     function attachCardListeners() {
-        // Mini card clicks -> expand
+        // Mini card clicks -> expand (collapse others)
         track.querySelectorAll('.crs-card-mini:not(.expanded)').forEach(function(el) {
             el.addEventListener('click', function() {
                 var idx = parseInt(this.getAttribute('data-idx'), 10);
@@ -333,7 +350,7 @@
             });
         });
 
-        // Dot card clicks -> expand
+        // Dot card clicks -> expand (collapse others)
         track.querySelectorAll('.crs-card-dot:not(.expanded)').forEach(function(el) {
             el.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -343,7 +360,29 @@
             });
         });
 
-        // Close buttons on expanded cards
+        // Full card clicks -> if it's already focused (no expandedIdx or same), do nothing
+        // If another card is expanded, clicking this full card refocuses it
+        track.querySelectorAll('.crs-card-full').forEach(function(el) {
+            el.addEventListener('click', function(e) {
+                // Don't intercept button/link clicks inside the card
+                if (e.target.closest('button, a, form')) return;
+                var idx = parseInt(this.getAttribute('data-idx'), 10);
+                if (expandedIdx !== null && expandedIdx !== idx) {
+                    expandedIdx = null;
+                    render();
+                }
+            });
+        });
+
+        // Demoted full cards rendered as mini -> click to restore focus
+        track.querySelectorAll('.crs-card-mini.crs-demoted').forEach(function(el) {
+            el.addEventListener('click', function() {
+                expandedIdx = null;
+                render();
+            });
+        });
+
+        // Close buttons on expanded cards -> collapse back to default
         track.querySelectorAll('.crs-close-btn').forEach(function(btn) {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
