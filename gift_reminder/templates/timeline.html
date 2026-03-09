@@ -130,15 +130,13 @@
     }
 
     // Determine card tier based on days_until
-    // 0-30 days  -> 'full'
-    // 31-90 days -> 'mini'
+    // NEXT UP or active state -> 'full' (only ONE prominent card)
+    // 0-90 days  -> 'mini'
     // 90+ days   -> 'dot'
-    // Also: any card in planning/selected/given state always gets 'full'
     function cardTier(card) {
         if (card.is_next_up) return 'full';
         if (card.state === 'planning' || card.state === 'selected' || card.state === 'given') return 'full';
         var d = card.days_until;
-        if (d <= 30) return 'full';
         if (d <= 90) return 'mini';
         return 'dot';
     }
