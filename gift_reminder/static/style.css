@@ -1522,6 +1522,210 @@ label {
    - 90+ days:   Tiny dots (tap to expand)
    ==================================================================== */
 
+/* ===== To-Do Section ===== */
+.todo-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.todo-section.todo-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.todo-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.todo-header:hover {
+    background: var(--bg-input);
+}
+
+.todo-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.todo-check-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--success);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.todo-empty .todo-check-icon {
+    background: var(--text-muted);
+}
+
+.todo-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.todo-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.todo-list {
+    border-top: 1px solid var(--border);
+}
+
+.todo-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: opacity 0.4s ease, background 0.3s ease;
+}
+
+.todo-item:last-child {
+    border-bottom: none;
+}
+
+.todo-item.todo-done {
+    opacity: 0.4;
+    background: var(--bg-input);
+}
+
+.todo-item-top {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.todo-checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-card);
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin-top: 1px;
+    transition: all 0.2s ease;
+}
+
+.todo-checkbox:hover {
+    border-color: var(--accent);
+}
+
+.todo-checkbox-inner {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.todo-checkbox-inner.checked {
+    color: white;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--success);
+    border-radius: 50%;
+}
+
+.todo-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.todo-item-action {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.todo-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.todo-item-icon {
+    font-size: 14px;
+}
+
+.todo-item-sep {
+    color: var(--text-muted);
+}
+
+.todo-days-overdue {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.todo-days-urgent {
+    color: #ea580c;
+    font-weight: 700;
+}
+
+.todo-item-selected {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.todo-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-left: 36px;
+}
+
+.todo-item.todo-overdue {
+    border-left: 3px solid #dc2626;
+}
+
+.todo-item.todo-urgent {
+    border-left: 3px solid #ea580c;
+}
+
 /* ===== Month Navigation ===== */
 .month-nav {
     display: flex;

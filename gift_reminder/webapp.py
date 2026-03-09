@@ -120,6 +120,9 @@ def create_app(db_path=None):
         answered_keys = db.get_answered_question_keys()
         bonus_remaining = len([q for q in BONUS_QUESTIONS if q["key"] not in answered_keys])
 
+        # Build to-do items from carousel cards
+        todo_items = _build_todo_items(carousel["cards"])
+
         return render_template(
             "timeline.html",
             partner_name=partner_name,
@@ -127,7 +130,23 @@ def create_app(db_path=None):
             next_up_index=next_up_index,
             quick_list=carousel["quick_list"],
             bonus_remaining=bonus_remaining,
+            todo_items=todo_items,
         )
+
+    # ------------------------------------------------------------------
+    # To-do: mark done via AJAX
+    # ------------------------------------------------------------------
+    @app.route("/todo/<int:occ_id>/mark-done", methods=["POST"])
+    def todo_mark_done(occ_id):
+        """Mark an occasion as 'given' from the to-do checklist."""
+        occ = db.get_occasion(occ_id)
+        if occ and occ["state"] in ("upcoming", "planning", "selected"):
+            db.update_occasion_state(occ_id, "given")
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(ok=True)
+        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(ok=False), 400
+        return redirect(url_for("timeline"))
 
     # ------------------------------------------------------------------
     # Occasion state machine
@@ -806,6 +825,75 @@ def _finish_update(db, answers):
 
     session.pop("update_answers", None)
     return redirect(url_for("update_complete"))
+
+
+def _build_todo_items(cards: list[dict]) -> list[dict]:
+    """Build a sorted to-do list from occasion cards.
+
+    Include:
+    - selected but not given
+    - overdue (past date, not complete/skipped/given)
+    - upcoming within 14 days with no selection yet
+    """
+    todos = []
+    for c in cards:
+        state = c.get("state", "")
+        days = c.get("days_until", 999)
+
+        # Skip terminal states
+        if state in ("complete", "skipped", "given"):
+            continue
+
+        include = False
+        # 1) Selected gift not yet given
+        if state == "selected":
+            include = True
+        # 2) Overdue (past date, still active)
+        elif days < 0 and state in ("upcoming", "planning", "selected"):
+            include = True
+        # 3) Upcoming within 14 days, no selection
+        elif 0 <= days <= 14 and state in ("upcoming", "planning"):
+            include = True
+
+        if not include:
+            continue
+
+        # Determine urgency
+        if days < 0:
+            urgency = "overdue"
+            urgency_label = f"{abs(days)} day{'s' if abs(days) != 1 else ''} OVERDUE"
+        elif days <= 3:
+            urgency = "urgent"
+            urgency_label = c.get("days_label", f"in {days} days")
+        else:
+            urgency = "normal"
+            urgency_label = c.get("days_label", f"in {days} days")
+
+        # Build action label
+        has_gift = bool(c.get("gift_selected"))
+        if has_gift:
+            action_label = "Buy " + c["gift_selected"]
+        else:
+            action_label = "Pick gift for " + c.get("date_display", "")
+
+        todos.append({
+            "id": c["id"],
+            "icon": c.get("icon", "&#127873;"),
+            "label": c.get("occasion_label", ""),
+            "date_display": c.get("date_display", ""),
+            "days_label": urgency_label,
+            "urgency": urgency,
+            "state": state,
+            "gift_selected": c.get("gift_selected") or "",
+            "gift_purchase_link": c.get("gift_purchase_link") or "",
+            "action_label": action_label,
+            "has_gift": has_gift,
+        })
+
+    # Sort: overdue first, then by days_until ascending
+    urgency_order = {"overdue": 0, "urgent": 1, "normal": 2}
+    todos.sort(key=lambda t: urgency_order.get(t["urgency"], 2))
+    return todos
 
 
 def _emoji_choices() -> list[str]:

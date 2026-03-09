@@ -18,6 +18,71 @@
         {% endfor %}
     {% endwith %}
 
+    <!-- To-Do Section -->
+    {% if todo_items %}
+    <div class="todo-section" id="todoSection">
+        <div class="todo-header" onclick="toggleTodo()">
+            <span class="todo-header-left">
+                <span class="todo-check-icon">&#10003;</span>
+                To Do <span class="todo-badge" id="todoCount">{{ todo_items|length }}</span>
+            </span>
+            <button class="todo-toggle-btn" id="todoToggle" aria-label="Toggle to-do list">&#9660;</button>
+        </div>
+        <div class="todo-list" id="todoList">
+            {% for item in todo_items %}
+            <div class="todo-item todo-{{ item.urgency }}" id="todo-{{ item.id }}">
+                <div class="todo-item-top">
+                    <button class="todo-checkbox" onclick="markTodoDone({{ item.id }}, this)" aria-label="Mark done">
+                        <span class="todo-checkbox-inner"></span>
+                    </button>
+                    <div class="todo-item-info">
+                        <div class="todo-item-action">
+                            {% if item.has_gift %}Buy {{ item.gift_selected }}{% else %}Pick gift{% endif %}
+                            for {{ item.date_display }}
+                        </div>
+                        <div class="todo-item-meta">
+                            <span class="todo-item-icon">{{ item.icon|safe }}</span>
+                            <span class="todo-item-label">{{ item.label }}</span>
+                            <span class="todo-item-sep">&middot;</span>
+                            <span class="todo-item-days todo-days-{{ item.urgency }}">
+                                {{ item.days_label }}
+                                {% if item.urgency == 'overdue' %} &#128680;{% elif item.urgency == 'urgent' %} &#9888;&#65039;{% endif %}
+                            </span>
+                        </div>
+                        {% if item.has_gift %}
+                        <div class="todo-item-selected">&#127775; {{ item.gift_selected }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="todo-item-actions">
+                    {% if item.has_gift and item.gift_purchase_link %}
+                    <a href="{{ item.gift_purchase_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">Buy Now</a>
+                    {% elif item.has_gift %}
+                    <form method="POST" action="{{ url_for('todo_mark_done', occ_id=item.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-secondary btn-sm">Mark Done</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('occasion_give_gift', occ_id=item.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-secondary btn-sm">Browse Ideas</button>
+                    </form>
+                    {% endif %}
+                    {% if item.has_gift %}
+                    <form method="POST" action="{{ url_for('todo_mark_done', occ_id=item.id) }}" style="display:inline">
+                        <button type="submit" class="btn btn-ghost btn-sm">Mark Done</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="todo-section todo-empty">
+        <span class="todo-check-icon">&#10003;</span>
+        All caught up! No pending gifts.
+    </div>
+    {% endif %}
+
     <!-- Month Navigation -->
     <div class="month-nav" id="month-nav">
         <button class="month-arrow month-arrow-left" id="month-prev" aria-label="Previous month">&#9664;</button>
@@ -510,6 +575,52 @@
 
     // Boot
     render();
+})();
+
+// ---- To-Do Section ----
+(function() {
+    var section = document.getElementById('todoSection');
+    if (!section) return;
+
+    var list = document.getElementById('todoList');
+    var toggle = document.getElementById('todoToggle');
+    var stored = localStorage.getItem('todo_collapsed');
+
+    if (stored === 'true') {
+        list.style.display = 'none';
+        toggle.innerHTML = '&#9654;';
+        section.classList.add('collapsed');
+    }
+
+    window.toggleTodo = function() {
+        var isHidden = list.style.display === 'none';
+        list.style.display = isHidden ? '' : 'none';
+        toggle.innerHTML = isHidden ? '&#9660;' : '&#9654;';
+        section.classList.toggle('collapsed', !isHidden);
+        localStorage.setItem('todo_collapsed', !isHidden);
+    };
+
+    window.markTodoDone = function(occId, btn) {
+        var item = document.getElementById('todo-' + occId);
+        if (!item) return;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/todo/' + occId + '/mark-done');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                item.classList.add('todo-done');
+                btn.innerHTML = '<span class="todo-checkbox-inner checked">&#10003;</span>';
+                // Update badge count
+                var badge = document.getElementById('todoCount');
+                var remaining = document.querySelectorAll('.todo-item:not(.todo-done)').length;
+                if (badge) badge.textContent = remaining;
+                // Fade out after a short delay
+                setTimeout(function() { item.style.display = 'none'; }, 800);
+            }
+        };
+        xhr.send();
+    };
 })();
 </script>
 {% endblock %}
