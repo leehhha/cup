@@ -186,6 +186,22 @@ SETUP_QUESTIONS = [
         ],
         "section": "Special Occasions",
     },
+    {
+        "key": "custom_dates",
+        "text": "What other special dates should we remember?",
+        "category": "occasions",
+        "type": "custom_dates",
+        "section": "Important Dates",
+        "preset_dates": [
+            {"name": "Day we met", "emoji": "\U0001f495"},
+            {"name": "First date", "emoji": "\U0001f339"},
+            {"name": "Wedding anniversary", "emoji": "\U0001f48d"},
+            {"name": "Dating anniversary", "emoji": "\u2764\ufe0f"},
+            {"name": "When we got engaged", "emoji": "\U0001f48e"},
+            {"name": "Moved in together", "emoji": "\U0001f3e0"},
+            {"name": "First I love you", "emoji": "\U0001f497"},
+        ],
+    },
 
     # --- Giver profile: 8 questions about YOUR gift-giving style ---
     {

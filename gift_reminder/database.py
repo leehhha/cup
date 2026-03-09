@@ -107,7 +107,11 @@ class Database:
                 occasion_name TEXT NOT NULL,
                 date_md TEXT NOT NULL,
                 recurring INTEGER NOT NULL DEFAULT 1,
-                enabled INTEGER NOT NULL DEFAULT 1
+                enabled INTEGER NOT NULL DEFAULT 1,
+                emoji TEXT,
+                original_year INTEGER,
+                is_custom INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT
             );
 
             CREATE TABLE IF NOT EXISTS occasions (
@@ -133,6 +137,14 @@ class Database:
                 purchase_link_clicked INTEGER DEFAULT 0
             );
         """)
+        # Migrate: add new columns to special_dates if they don't exist
+        try:
+            self.conn.execute("SELECT emoji FROM special_dates LIMIT 0")
+        except sqlite3.OperationalError:
+            self.conn.execute("ALTER TABLE special_dates ADD COLUMN emoji TEXT")
+            self.conn.execute("ALTER TABLE special_dates ADD COLUMN original_year INTEGER")
+            self.conn.execute("ALTER TABLE special_dates ADD COLUMN is_custom INTEGER NOT NULL DEFAULT 0")
+            self.conn.execute("ALTER TABLE special_dates ADD COLUMN created_at TEXT")
         self.conn.commit()
 
     # --- Profile ---
@@ -432,25 +444,66 @@ class Database:
 
     # --- Special Dates ---
 
-    def save_special_date(self, occasion_name: str, date_md: str, enabled: bool = True):
+    def save_special_date(self, occasion_name: str, date_md: str, enabled: bool = True,
+                          emoji: str = "", original_year: int | None = None,
+                          is_custom: bool = False, recurring: bool = True):
+        now = datetime.now().isoformat()
         existing = self.conn.execute(
-            "SELECT id FROM special_dates WHERE occasion_name = ?", (occasion_name,)
+            "SELECT id FROM special_dates WHERE occasion_name = ? AND is_custom = ?",
+            (occasion_name, int(is_custom)),
         ).fetchone()
         if existing:
             self.conn.execute(
-                "UPDATE special_dates SET date_md = ?, enabled = ? WHERE id = ?",
-                (date_md, int(enabled), existing["id"]),
+                """UPDATE special_dates SET date_md = ?, enabled = ?, emoji = ?,
+                   original_year = ?, recurring = ? WHERE id = ?""",
+                (date_md, int(enabled), emoji, original_year, int(recurring), existing["id"]),
             )
         else:
             self.conn.execute(
-                "INSERT INTO special_dates (occasion_name, date_md, recurring, enabled) VALUES (?, ?, 1, ?)",
-                (occasion_name, date_md, int(enabled)),
+                """INSERT INTO special_dates
+                   (occasion_name, date_md, recurring, enabled, emoji, original_year, is_custom, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (occasion_name, date_md, int(recurring), int(enabled), emoji, original_year,
+                 int(is_custom), now),
             )
         self.conn.commit()
 
     def get_special_dates(self) -> list[dict]:
         rows = self.conn.execute("SELECT * FROM special_dates WHERE enabled = 1").fetchall()
         return [dict(r) for r in rows]
+
+    def get_all_special_dates(self) -> list[dict]:
+        rows = self.conn.execute("SELECT * FROM special_dates ORDER BY date_md").fetchall()
+        return [dict(r) for r in rows]
+
+    def get_custom_special_dates(self) -> list[dict]:
+        rows = self.conn.execute(
+            "SELECT * FROM special_dates WHERE is_custom = 1 ORDER BY date_md"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_special_date(self, date_id: int) -> dict | None:
+        row = self.conn.execute("SELECT * FROM special_dates WHERE id = ?", (date_id,)).fetchone()
+        return dict(row) if row else None
+
+    def update_special_date(self, date_id: int, occasion_name: str, date_md: str,
+                            emoji: str = "", original_year: int | None = None,
+                            recurring: bool = True):
+        self.conn.execute(
+            """UPDATE special_dates SET occasion_name = ?, date_md = ?, emoji = ?,
+               original_year = ?, recurring = ? WHERE id = ?""",
+            (occasion_name, date_md, emoji, original_year, int(recurring), date_id),
+        )
+        self.conn.commit()
+
+    def delete_special_date(self, date_id: int):
+        self.conn.execute("DELETE FROM special_dates WHERE id = ?", (date_id,))
+        # Also remove any generated occasions for this custom date
+        self.conn.execute(
+            "DELETE FROM occasions WHERE occasion_type = ?",
+            (f"custom_{date_id}",),
+        )
+        self.conn.commit()
 
     # --- Occasions ---
 

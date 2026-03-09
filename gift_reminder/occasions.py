@@ -82,6 +82,7 @@ def generate_upcoming_occasions(db, horizon_days: int = 180) -> list[dict]:
     for sd in special_dates:
         name = sd["occasion_name"]
         md = sd["date_md"]
+        is_custom = sd.get("is_custom", 0)
 
         # Mother's Day is calculated dynamically
         if name == "mothers_day":
@@ -96,10 +97,29 @@ def generate_upcoming_occasions(db, horizon_days: int = 180) -> list[dict]:
             continue
         month, day = parsed
 
-        next_date = _next_occurrence_md(month, day, today)
-        if next_date <= horizon:
-            label = _label_for_occasion(name)
-            _ensure_occasion(db, name, label, next_date.isoformat())
+        if is_custom:
+            # Custom personal dates use a unique occasion_type
+            otype = f"custom_{sd['id']}"
+            emoji = sd.get("emoji", "")
+            recurring = sd.get("recurring", 1)
+            original_year = sd.get("original_year")
+
+            if recurring:
+                next_date = _next_occurrence_md(month, day, today)
+                if next_date <= horizon:
+                    label = sd["occasion_name"]
+                    _ensure_occasion(db, otype, label, next_date.isoformat())
+            else:
+                # One-time: only show if the full date is in the future
+                if original_year:
+                    one_time = date(original_year, month, min(day, 28))
+                    if today <= one_time <= horizon:
+                        _ensure_occasion(db, otype, sd["occasion_name"], one_time.isoformat())
+        else:
+            next_date = _next_occurrence_md(month, day, today)
+            if next_date <= horizon:
+                label = _label_for_occasion(name)
+                _ensure_occasion(db, name, label, next_date.isoformat())
 
     return db.get_upcoming_occasions(20)
 
@@ -140,7 +160,7 @@ def build_timeline(db) -> dict:
     next_up = None
     upcoming = []
     for occ in all_upcoming:
-        _annotate_occasion(occ, today)
+        _annotate_occasion(occ, today, db)
 
         if occ["state"] in ("upcoming", "planning", "selected", "given"):
             if next_up is None:
@@ -151,7 +171,7 @@ def build_timeline(db) -> dict:
     # Past occasions with ratings
     past = db.get_past_occasions(10)
     for occ in past:
-        _annotate_occasion(occ, today)
+        _annotate_occasion(occ, today, db)
         rating = db.get_rating_for_occasion(occ["id"])
         occ["rating"] = rating
 
@@ -193,7 +213,7 @@ def build_carousel_data(db) -> dict:
     quick_list = []
 
     for i, occ in enumerate(deduped):
-        _annotate_occasion(occ, today)
+        _annotate_occasion(occ, today, db)
         rating = db.get_rating_for_occasion(occ["id"])
         if rating:
             occ["rating_val"] = rating["rating"]
@@ -245,16 +265,35 @@ def occasion_to_json(occ: dict) -> dict:
         "gift_purchase_link": occ.get("gift_purchase_link") or "",
         "rating_val": occ.get("rating_val", 0),
         "feedback": occ.get("feedback", ""),
+        "anniversary_text": occ.get("anniversary_text", ""),
+        "is_milestone": occ.get("is_milestone", False),
     }
 
 
-def _annotate_occasion(occ: dict, today: date):
+def _annotate_occasion(occ: dict, today: date, db=None):
     """Add display fields to an occasion dict."""
     occ_date = date.fromisoformat(occ["occasion_date"])
     days = (occ_date - today).days
     occ["days_until"] = days
     occ["date_display"] = occ_date.strftime("%B %-d, %Y")
-    occ["icon"] = _icon_for_type(occ["occasion_type"])
+    occ["icon"] = _icon_for_type(occ["occasion_type"], db)
+
+    # Anniversary calculation for custom dates
+    occ["anniversary_text"] = ""
+    occ["is_milestone"] = False
+    if occ["occasion_type"].startswith("custom_") and db:
+        try:
+            sd_id = int(occ["occasion_type"].split("_", 1)[1])
+            sd = db.get_special_date(sd_id)
+            if sd and sd.get("original_year") and sd.get("recurring"):
+                anniv_num = occ_date.year - sd["original_year"]
+                if anniv_num > 0:
+                    occ["anniversary_text"] = _ordinal(anniv_num) + " year"
+                    if anniv_num % 5 == 0:
+                        occ["is_milestone"] = True
+                        occ["anniversary_text"] = _ordinal(anniv_num) + " anniversary"
+        except (ValueError, TypeError):
+            pass
 
     if days < 0:
         occ["days_label"] = f"{abs(days)} days ago"
@@ -266,7 +305,15 @@ def _annotate_occasion(occ: dict, today: date):
         occ["days_label"] = f"in {days} days"
 
 
-def _icon_for_type(occasion_type: str) -> str:
+def _ordinal(n: int) -> str:
+    """Return ordinal string for a number: 1st, 2nd, 3rd, 4th, ..."""
+    if 11 <= (n % 100) <= 13:
+        return f"{n}th"
+    suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _icon_for_type(occasion_type: str, db=None) -> str:
     icons = {
         "monthly": "&#128157;",
         "quarterly": "&#127881;",
@@ -275,5 +322,17 @@ def _icon_for_type(occasion_type: str) -> str:
         "valentines": "&#128152;",
         "christmas": "&#127876;",
         "mothers_day": "&#127801;",
+        "holiday": "&#127801;",
     }
-    return icons.get(occasion_type, "&#127873;")
+    if occasion_type in icons:
+        return icons[occasion_type]
+    # Custom dates: look up emoji from DB
+    if occasion_type.startswith("custom_") and db:
+        try:
+            sd_id = int(occasion_type.split("_", 1)[1])
+            sd = db.get_special_date(sd_id)
+            if sd and sd.get("emoji"):
+                return sd["emoji"]
+        except (ValueError, TypeError):
+            pass
+    return "&#127873;"

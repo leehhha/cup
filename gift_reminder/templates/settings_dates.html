@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="header">
+    <div class="container" style="display: flex; align-items: center; gap: 12px;">
+        <a href="{{ url_for('timeline') }}" class="btn btn-ghost" style="padding: 6px 10px;">&larr;</a>
+        <h1>Special Dates</h1>
+    </div>
+</div>
+
+<div class="container py-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    {% if dates %}
+    <div class="sd-settings-list">
+        {% for d in dates %}
+        <div class="sd-settings-card">
+            <div class="sd-settings-header">
+                <span class="sd-settings-emoji">{{ d.emoji or '❤️' }}</span>
+                <div class="sd-settings-info">
+                    <div class="sd-settings-name">{{ d.occasion_name }}</div>
+                    <div class="sd-settings-date">{{ d.display_date }}</div>
+                    {% if d.anniversary_text %}
+                    <div class="sd-settings-anniv">{{ d.anniversary_text }}</div>
+                    {% endif %}
+                    {% if not d.recurring %}
+                    <div class="sd-settings-badge">One-time</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="sd-settings-actions">
+                <a href="{{ url_for('settings_date_edit', date_id=d.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+                <form method="POST" action="{{ url_for('settings_date_delete', date_id=d.id) }}"
+                      onsubmit="return confirm('Delete &quot;{{ d.occasion_name }}&quot;? This will remove it from your timeline.');">
+                    <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--accent);">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px 0; color: var(--text-muted);">
+        <div style="font-size: 48px; margin-bottom: 12px;">📅</div>
+        <p>No special dates yet.</p>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('settings_date_add') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+        + Add New Special Date
+    </a>
+
+    <div style="height: 32px;"></div>
+</div>
+{% endblock %}

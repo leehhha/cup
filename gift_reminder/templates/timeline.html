@@ -3,8 +3,9 @@
 {% block body %}
 <!-- Header -->
 <div class="header">
-    <div class="container">
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between;">
         <h1>&#127873; Gift Timeline</h1>
+        <a href="{{ url_for('settings_dates') }}" class="btn btn-ghost btn-sm" style="font-size: 18px;" title="Settings">&#9881;</a>
     </div>
 </div>
 
@@ -210,8 +211,16 @@
         html += '<button class="crs-close-btn" data-action="collapse">&times;</button>';
         html += '<div class="crs-icon">' + card.icon + '</div>';
         html += '<div class="crs-label">' + escHtml(card.label) + '</div>';
+        if (card.anniversary_text) {
+            html += '<div class="crs-anniversary">' + escHtml(card.anniversary_text);
+            if (card.is_milestone) html += ' &#10024;';
+            html += '</div>';
+        }
         html += '<div class="crs-date">' + escHtml(card.date_display) + '</div>';
         html += '<div class="' + daysClass + '">' + escHtml(card.days_label) + '</div>';
+        if (card.is_milestone) {
+            html += '<div class="crs-milestone">&#10024; Milestone Anniversary</div>';
+        }
         html += buildStateContent(card);
         html += '</div>';
         return html;
@@ -232,8 +241,16 @@
         }
         html += '<div class="crs-icon">' + card.icon + '</div>';
         html += '<div class="crs-label">' + escHtml(card.label) + '</div>';
+        if (card.anniversary_text) {
+            html += '<div class="crs-anniversary">' + escHtml(card.anniversary_text);
+            if (card.is_milestone) html += ' &#10024;';
+            html += '</div>';
+        }
         html += '<div class="crs-date">' + escHtml(card.date_display) + '</div>';
         html += '<div class="' + daysClass + '">' + escHtml(card.days_label) + '</div>';
+        if (card.is_milestone) {
+            html += '<div class="crs-milestone">&#10024; Milestone Anniversary</div>';
+        }
         html += buildStateContent(card);
         html += '</div>';
         return html;

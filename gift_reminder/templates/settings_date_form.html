@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="header">
+    <div class="container" style="display: flex; align-items: center; gap: 12px;">
+        <a href="{{ url_for('settings_dates') }}" class="btn btn-ghost" style="padding: 6px 10px;">&larr;</a>
+        <h1>{{ 'Edit' if editing else 'Add' }} Special Date</h1>
+    </div>
+</div>
+
+<div class="container py-4">
+    <form method="POST" class="sd-form-page">
+        <label class="sd-form-label">Date name</label>
+        <input type="text" name="name" class="sd-form-input" maxlength="50" required
+               value="{{ date_obj.occasion_name if editing else '' }}"
+               placeholder='e.g. "First trip together"'>
+
+        <label class="sd-form-label">Date</label>
+        <input type="date" name="date_val" class="sd-form-input" required
+               value="{{ date_obj.full_date if editing else '' }}">
+
+        <label class="sd-form-label">Emoji</label>
+        <div class="sd-emoji-picker" id="emoji-picker">
+            {% for em in emoji_choices %}
+            <button type="button" class="sd-emoji-btn {% if (editing and date_obj.emoji == em) or (not editing and em == '❤️') %}selected{% endif %}"
+                    onclick="pickEmoji(this, '{{ em }}')">{{ em }}</button>
+            {% endfor %}
+        </div>
+        <input type="hidden" name="emoji" id="emoji-hidden" value="{{ date_obj.emoji if editing else '❤️' }}">
+
+        <label class="sd-form-label">Remind every year?</label>
+        <div class="sd-recurring-toggle">
+            <label><input type="radio" name="recurring" value="1"
+                          {% if not editing or date_obj.recurring %}checked{% endif %}> Yes (annual reminder)</label>
+            <label><input type="radio" name="recurring" value="0"
+                          {% if editing and not date_obj.recurring %}checked{% endif %}> No (one-time date)</label>
+        </div>
+
+        <div class="question-nav" style="margin-top: 24px;">
+            <a href="{{ url_for('settings_dates') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">{{ 'Save Changes' if editing else 'Add Date' }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function pickEmoji(btn, emoji) {
+    document.querySelectorAll('.sd-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    document.getElementById('emoji-hidden').value = emoji;
+}
+</script>
+{% endblock %}

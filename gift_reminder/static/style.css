@@ -2060,3 +2060,295 @@ label {
     .crs-card-dot.expanded { flex: 0 0 300px; min-height: 440px; }
     .month-label-current { font-size: 18px; }
 }
+
+/* ====================================================================
+   SPECIAL DATES — Setup & Settings
+   ==================================================================== */
+
+/* Setup date rows */
+.sd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s ease;
+}
+
+.sd-row:has(.sd-checkbox:checked) {
+    border-color: var(--accent);
+}
+
+.sd-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+}
+
+.sd-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+}
+
+.sd-emoji {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.sd-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sd-date-input {
+    width: 140px;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.sd-date-input:disabled {
+    opacity: 0.4;
+}
+
+.sd-custom-row {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.sd-custom-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+.sd-remove-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.sd-remove-btn:hover {
+    color: var(--accent);
+}
+
+.sd-add-btn {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+/* Add custom date form */
+.sd-add-form {
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.sd-add-form-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+}
+
+.sd-form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    margin-top: 12px;
+}
+
+.sd-form-label:first-child {
+    margin-top: 0;
+}
+
+.sd-form-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
+.sd-form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.sd-emoji-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.sd-emoji-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.sd-emoji-btn:hover {
+    border-color: var(--text-muted);
+}
+
+.sd-emoji-btn.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.sd-recurring-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.sd-recurring-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.sd-recurring-toggle input[type="radio"] {
+    accent-color: var(--accent);
+}
+
+.sd-add-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* Settings dates list */
+.sd-settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sd-settings-card {
+    padding: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.sd-settings-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.sd-settings-emoji {
+    font-size: 28px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.sd-settings-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sd-settings-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sd-settings-date {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.sd-settings-anniv {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.sd-settings-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    background: var(--bg-input);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 4px;
+}
+
+.sd-settings-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.sd-form-page {
+    max-width: 500px;
+}
+
+/* Milestone badge on carousel cards */
+.crs-milestone {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.crs-anniversary {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 4px;
+}

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block body %}
+<div class="container">
+    <!-- Progress -->
+    <div class="progress-bar-wrap">
+        <div class="progress-bar">
+            <div class="progress-bar-fill" style="width: {{ ((index + 1) / total * 100) | int }}%"></div>
+        </div>
+        <div class="progress-text">{{ ((index + 1) / total * 100) | int }}% complete</div>
+    </div>
+
+    <div class="question-screen">
+        <div class="question-section">Important Dates</div>
+        <div class="question-number">Question {{ index + 1 }} of {{ total }}</div>
+        <div class="question-text">What other special dates should we remember?</div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Check any dates that matter to your relationship and enter the date.
+        </p>
+
+        <form method="POST" action="{{ url_for('setup_question', index=index) }}" id="dates-form">
+            <!-- Preset dates -->
+            <div class="sd-list" id="sd-list">
+                {% for preset in presets %}
+                <div class="sd-row" data-name="{{ preset.name }}">
+                    <label class="sd-check">
+                        <input type="checkbox" name="sd_checked" value="{{ loop.index0 }}"
+                               class="sd-checkbox" onchange="toggleRow(this)">
+                        <span class="sd-emoji">{{ preset.emoji }}</span>
+                        <span class="sd-name">{{ preset.name }}</span>
+                    </label>
+                    <input type="date" name="sd_date_{{ loop.index0 }}" class="sd-date-input" disabled
+                           placeholder="MM/DD/YYYY">
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Custom dates added by user -->
+            <div id="custom-dates"></div>
+
+            <!-- Add custom date button -->
+            <button type="button" class="btn btn-secondary sd-add-btn" onclick="showAddForm()">
+                + Add Custom Date
+            </button>
+
+            <!-- Add custom date form (hidden by default) -->
+            <div class="sd-add-form" id="add-form" style="display: none;">
+                <div class="sd-add-form-title">Add Custom Date</div>
+                <label class="sd-form-label">Date name</label>
+                <input type="text" id="custom-name" class="sd-form-input" maxlength="50"
+                       placeholder='e.g. "First trip together"'>
+                <label class="sd-form-label">Date</label>
+                <input type="date" id="custom-date-val" class="sd-form-input">
+                <label class="sd-form-label">Emoji (optional)</label>
+                <div class="sd-emoji-picker" id="emoji-picker">
+                    {% for em in emoji_choices %}
+                    <button type="button" class="sd-emoji-btn" onclick="pickEmoji(this, '{{ em }}')">{{ em }}</button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" id="custom-emoji" value="">
+                <label class="sd-form-label">Remind every year?</label>
+                <div class="sd-recurring-toggle">
+                    <label><input type="radio" name="custom_recurring" value="1" checked> Yes (annual reminder)</label>
+                    <label><input type="radio" name="custom_recurring" value="0"> No (one-time date)</label>
+                </div>
+                <div class="sd-add-form-actions">
+                    <button type="button" class="btn btn-ghost" onclick="hideAddForm()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addCustomDate()">Add Date</button>
+                </div>
+            </div>
+
+            <!-- Hidden field to carry all custom dates as JSON -->
+            <input type="hidden" name="custom_dates_json" id="custom-dates-json" value="[]">
+            <input type="hidden" name="answer" id="answer-hidden" value="">
+
+            <div class="question-nav">
+                <div>
+                    {% if index > 0 %}
+                        <a href="{{ url_for('setup_question', index=index - 1) }}" class="btn btn-ghost">Back</a>
+                    {% endif %}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="submit" name="skip" value="1" class="btn btn-ghost">Skip</button>
+                    <button type="submit" class="btn btn-primary">Next</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var customDates = [];
+var customCounter = 0;
+var presetNames = {{ presets | tojson }};
+
+function toggleRow(cb) {
+    var row = cb.closest('.sd-row');
+    var dateInput = row.querySelector('.sd-date-input');
+    dateInput.disabled = !cb.checked;
+    if (cb.checked) dateInput.focus();
+    updateAnswer();
+}
+
+function updateAnswer() {
+    // Collect all checked preset dates
+    var rows = document.querySelectorAll('.sd-row');
+    var collected = [];
+    rows.forEach(function(row, i) {
+        var cb = row.querySelector('.sd-checkbox');
+        if (cb && cb.checked) {
+            var dateVal = row.querySelector('.sd-date-input').value;
+            if (dateVal) {
+                collected.push(presetNames[i].name + ':' + dateVal + ':' + presetNames[i].emoji);
+            }
+        }
+    });
+    // Add custom dates
+    customDates.forEach(function(cd) {
+        collected.push(cd.name + ':' + cd.date + ':' + cd.emoji + ':' + cd.recurring);
+    });
+    document.getElementById('answer-hidden').value = collected.length > 0 ? 'has_dates' : '';
+    document.getElementById('custom-dates-json').value = JSON.stringify(customDates);
+}
+
+function showAddForm() {
+    document.getElementById('add-form').style.display = 'block';
+    document.getElementById('custom-name').focus();
+}
+
+function hideAddForm() {
+    document.getElementById('add-form').style.display = 'none';
+    document.getElementById('custom-name').value = '';
+    document.getElementById('custom-date-val').value = '';
+    document.getElementById('custom-emoji').value = '';
+    document.querySelectorAll('.sd-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+}
+
+function pickEmoji(btn, emoji) {
+    document.querySelectorAll('.sd-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    document.getElementById('custom-emoji').value = emoji;
+}
+
+function addCustomDate() {
+    var name = document.getElementById('custom-name').value.trim();
+    var dateVal = document.getElementById('custom-date-val').value;
+    var emoji = document.getElementById('custom-emoji').value || '\u2764\ufe0f';
+    var recurring = document.querySelector('input[name="custom_recurring"]:checked').value;
+
+    if (!name) { alert('Please enter a date name.'); return; }
+    if (name.length > 50) { alert('Name must be 50 characters or less.'); return; }
+    if (!dateVal) { alert('Please enter a valid date.'); return; }
+
+    customDates.push({name: name, date: dateVal, emoji: emoji, recurring: recurring});
+    renderCustomDates();
+    hideAddForm();
+    updateAnswer();
+}
+
+function removeCustomDate(idx) {
+    customDates.splice(idx, 1);
+    renderCustomDates();
+    updateAnswer();
+}
+
+function renderCustomDates() {
+    var container = document.getElementById('custom-dates');
+    var html = '';
+    customDates.forEach(function(cd, i) {
+        html += '<div class="sd-row sd-custom-row">';
+        html += '<span class="sd-emoji">' + cd.emoji + '</span>';
+        html += '<span class="sd-name">' + cd.name + '</span>';
+        html += '<span class="sd-custom-date">' + cd.date + '</span>';
+        html += '<button type="button" class="sd-remove-btn" onclick="removeCustomDate(' + i + ')">&times;</button>';
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

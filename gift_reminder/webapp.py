@@ -46,6 +46,27 @@ def create_app(db_path=None):
         question = SETUP_QUESTIONS[index]
         answers = session.get("setup_answers", {})
 
+        # Special dates question uses its own template
+        if question.get("type") == "custom_dates":
+            if request.method == "POST":
+                # Process preset dates and custom dates
+                _process_custom_dates_form(db, request.form)
+                answers[question["key"]] = request.form.get("answer", "") or "skipped"
+                session["setup_answers"] = answers
+                if index == total - 1:
+                    return _finish_setup(db, answers)
+                return redirect(url_for("setup_question", index=index + 1))
+
+            emoji_choices = _emoji_choices()
+            return render_template(
+                "setup_special_dates.html",
+                question=question,
+                index=index,
+                total=total,
+                presets=question.get("preset_dates", []),
+                emoji_choices=emoji_choices,
+            )
+
         if request.method == "POST":
             answer = request.form.get("answer", "").strip()
             if answer:
@@ -429,6 +450,126 @@ def create_app(db_path=None):
     def checkin3_complete():
         return render_template("checkin3_complete.html")
 
+    # ------------------------------------------------------------------
+    # Settings: Special Dates
+    # ------------------------------------------------------------------
+    @app.route("/settings/special-dates")
+    def settings_dates():
+        if not db.is_setup_complete():
+            return redirect(url_for("index"))
+        all_dates = db.get_all_special_dates()
+        today = date.today()
+        for d in all_dates:
+            # Build display date
+            parsed = _parse_date_md(d["date_md"])
+            if parsed:
+                m, dy = parsed
+                if d.get("original_year"):
+                    d["display_date"] = date(d["original_year"], m, min(dy, 28)).strftime("%B %-d, %Y")
+                else:
+                    d["display_date"] = date(today.year, m, min(dy, 28)).strftime("%B %-d")
+            else:
+                d["display_date"] = d["date_md"]
+            # Anniversary text
+            d["anniversary_text"] = ""
+            if d.get("original_year") and d.get("recurring"):
+                years = today.year - d["original_year"]
+                if years > 0:
+                    d["anniversary_text"] = f"{years} year{'s' if years != 1 else ''}"
+        return render_template("settings_dates.html", dates=all_dates)
+
+    @app.route("/settings/special-dates/add", methods=["GET", "POST"])
+    def settings_date_add():
+        if not db.is_setup_complete():
+            return redirect(url_for("index"))
+
+        if request.method == "POST":
+            name = request.form.get("name", "").strip()[:50]
+            date_val = request.form.get("date_val", "").strip()
+            emoji = request.form.get("emoji", "❤️").strip()
+            recurring = request.form.get("recurring", "1") == "1"
+
+            if not name or not date_val:
+                flash("Name and date are required.", "error")
+                return redirect(url_for("settings_date_add"))
+
+            try:
+                d = date.fromisoformat(date_val)
+                date_md = f"{d.month:02d}/{d.day:02d}"
+                original_year = d.year
+            except ValueError:
+                flash("Invalid date format.", "error")
+                return redirect(url_for("settings_date_add"))
+
+            db.save_special_date(
+                name, date_md, enabled=True, emoji=emoji,
+                original_year=original_year, is_custom=True, recurring=recurring,
+            )
+            flash(f"Added \"{name}\"!", "success")
+            return redirect(url_for("settings_dates"))
+
+        return render_template(
+            "settings_date_form.html",
+            editing=False,
+            date_obj=None,
+            emoji_choices=_emoji_choices(),
+        )
+
+    @app.route("/settings/special-dates/<int:date_id>/edit", methods=["GET", "POST"])
+    def settings_date_edit(date_id):
+        if not db.is_setup_complete():
+            return redirect(url_for("index"))
+
+        sd = db.get_special_date(date_id)
+        if not sd:
+            flash("Date not found.", "error")
+            return redirect(url_for("settings_dates"))
+
+        if request.method == "POST":
+            name = request.form.get("name", "").strip()[:50]
+            date_val = request.form.get("date_val", "").strip()
+            emoji = request.form.get("emoji", "❤️").strip()
+            recurring = request.form.get("recurring", "1") == "1"
+
+            if not name or not date_val:
+                flash("Name and date are required.", "error")
+                return redirect(url_for("settings_date_edit", date_id=date_id))
+
+            try:
+                d = date.fromisoformat(date_val)
+                date_md = f"{d.month:02d}/{d.day:02d}"
+                original_year = d.year
+            except ValueError:
+                flash("Invalid date format.", "error")
+                return redirect(url_for("settings_date_edit", date_id=date_id))
+
+            db.update_special_date(date_id, name, date_md, emoji, original_year, recurring)
+            flash(f"Updated \"{name}\"!", "success")
+            return redirect(url_for("settings_dates"))
+
+        # Build full_date for the edit form
+        parsed = _parse_date_md(sd["date_md"])
+        if parsed and sd.get("original_year"):
+            m, dy = parsed
+            sd["full_date"] = date(sd["original_year"], m, min(dy, 28)).isoformat()
+        else:
+            sd["full_date"] = ""
+
+        return render_template(
+            "settings_date_form.html",
+            editing=True,
+            date_obj=sd,
+            emoji_choices=_emoji_choices(),
+        )
+
+    @app.route("/settings/special-dates/<int:date_id>/delete", methods=["POST"])
+    def settings_date_delete(date_id):
+        sd = db.get_special_date(date_id)
+        if sd:
+            db.delete_special_date(date_id)
+            flash(f"Deleted \"{sd['occasion_name']}\".", "success")
+        return redirect(url_for("settings_dates"))
+
     return app
 
 
@@ -603,6 +744,92 @@ def _finish_update(db, answers):
 
     session.pop("update_answers", None)
     return redirect(url_for("update_complete"))
+
+
+def _emoji_choices() -> list[str]:
+    """Return a list of emoji options for the special dates picker."""
+    return [
+        "\U0001f495", "\U0001f339", "\U0001f48d", "\u2764\ufe0f", "\U0001f48e",
+        "\U0001f3e0", "\U0001f497", "\u2708\ufe0f", "\U0001f436", "\U0001f393",
+        "\U0001f3b5", "\U0001f31f", "\U0001f382", "\U0001f381", "\U0001f4f7",
+        "\U0001f375", "\U0001f30d", "\U0001f308",
+    ]
+
+
+def _parse_date_md(md_str: str) -> tuple[int, int] | None:
+    """Parse 'MM/DD' or 'MM-DD' into (month, day)."""
+    for sep in ("/", "-"):
+        if sep in md_str:
+            parts = md_str.strip().split(sep)
+            if len(parts) == 2:
+                try:
+                    return int(parts[0]), int(parts[1])
+                except ValueError:
+                    return None
+    return None
+
+
+def _process_custom_dates_form(db, form):
+    """Process the special dates form from setup wizard."""
+    # Get preset date data from the question definition
+    from gift_reminder.data.questions import SETUP_QUESTIONS
+    question = None
+    for q in SETUP_QUESTIONS:
+        if q.get("key") == "custom_dates":
+            question = q
+            break
+    if not question:
+        return
+
+    presets = question.get("preset_dates", [])
+
+    # Process checked preset dates
+    checked = form.getlist("sd_checked")
+    for idx_str in checked:
+        try:
+            idx = int(idx_str)
+        except ValueError:
+            continue
+        if idx < 0 or idx >= len(presets):
+            continue
+        date_val = form.get(f"sd_date_{idx}", "").strip()
+        if not date_val:
+            continue
+        preset = presets[idx]
+        try:
+            d = date.fromisoformat(date_val)
+            date_md = f"{d.month:02d}/{d.day:02d}"
+            db.save_special_date(
+                preset["name"], date_md, enabled=True,
+                emoji=preset["emoji"], original_year=d.year,
+                is_custom=True, recurring=True,
+            )
+        except ValueError:
+            continue
+
+    # Process custom dates JSON
+    custom_json = form.get("custom_dates_json", "[]")
+    try:
+        custom_dates = json.loads(custom_json)
+    except (json.JSONDecodeError, TypeError):
+        custom_dates = []
+
+    for cd in custom_dates:
+        name = cd.get("name", "").strip()[:50]
+        date_val = cd.get("date", "").strip()
+        emoji = cd.get("emoji", "\u2764\ufe0f")
+        recurring = cd.get("recurring", "1") == "1"
+        if not name or not date_val:
+            continue
+        try:
+            d = date.fromisoformat(date_val)
+            date_md = f"{d.month:02d}/{d.day:02d}"
+            db.save_special_date(
+                name, date_md, enabled=True, emoji=emoji,
+                original_year=d.year, is_custom=True, recurring=recurring,
+            )
+        except ValueError:
+            continue
 
 
 def main():
