@@ -1637,11 +1637,13 @@ label {
 .carousel-track {
     display: flex;
     align-items: flex-end;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 12px;
     transition: transform 0.3s ease;
     min-height: 440px;
     padding-bottom: 8px;
+    padding-left: calc(50% - 140px);
+    padding-right: calc(50% - 140px);
 }
 
 /* ===== FULL CARD (Next Up, 0-30 days) ===== */
