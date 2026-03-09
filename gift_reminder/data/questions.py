@@ -484,13 +484,6 @@ BONUS_QUESTIONS = [
         "type": "text",
         "section": "Experiences & Sentimental",
     },
-    {
-        "key": "upcoming_events",
-        "text": "Any upcoming milestones or special dates to keep in mind? (anniversary, birthday month, etc.)",
-        "category": "basic",
-        "type": "text",
-        "section": "Experiences & Sentimental",
-    },
 ]
 
 # 3-month check-in questions (quick pulse check)

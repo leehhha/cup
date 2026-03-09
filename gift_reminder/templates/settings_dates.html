@@ -2,9 +2,11 @@
 
 {% block body %}
 <div class="header">
-    <div class="container" style="display: flex; align-items: center; gap: 12px;">
-        <a href="{{ url_for('timeline') }}" class="btn btn-ghost" style="padding: 6px 10px;">&larr;</a>
-        <h1>Special Dates</h1>
+    <div class="container" style="display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="{{ url_for('timeline') }}" class="btn btn-ghost" style="padding: 6px 10px;">&larr;</a>
+            <h1>Special Dates</h1>
+        </div>
     </div>
 </div>
 
@@ -15,12 +17,49 @@
         {% endfor %}
     {% endwith %}
 
-    {% if dates %}
+    <div class="sd-section-intro">
+        <p>Select which dates you'd like to track for gift reminders.</p>
+    </div>
+
+    <!-- Common Milestones -->
+    <form method="POST" action="{{ url_for('settings_dates_save') }}" id="milestones-form">
+        <div class="sd-section-label">Common Milestones</div>
+        <div class="sd-milestone-list">
+            {% for ms in milestones %}
+            {% set saved = saved_common.get(ms.id) %}
+            <div class="sd-milestone-item {% if saved %}sd-milestone-active{% endif %}">
+                <label class="sd-milestone-check">
+                    <input type="checkbox" name="milestone_checked" value="{{ ms.id }}"
+                           class="sd-checkbox" id="ms-{{ ms.id }}"
+                           {% if saved %}checked{% endif %}
+                           onchange="toggleMilestoneDate(this, '{{ ms.id }}')">
+                    <span class="sd-milestone-emoji">{{ ms.emoji }}</span>
+                    <span class="sd-milestone-label">{{ ms.label }}</span>
+                </label>
+                <div class="sd-milestone-date-wrap {% if not saved %}hidden{% endif %}" id="date-wrap-{{ ms.id }}">
+                    <input type="date" name="milestone_date_{{ ms.id }}"
+                           class="sd-milestone-date-input"
+                           id="date-{{ ms.id }}"
+                           value="{{ saved.full_date if saved and saved.full_date else '' }}">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+            Save Milestones
+        </button>
+    </form>
+
+    <!-- Custom Dates -->
+    <div class="sd-section-label" style="margin-top: 32px;">Custom Dates</div>
+
+    {% if custom_dates %}
     <div class="sd-settings-list">
-        {% for d in dates %}
+        {% for d in custom_dates %}
         <div class="sd-settings-card">
             <div class="sd-settings-header">
-                <span class="sd-settings-emoji">{{ d.emoji or '❤️' }}</span>
+                <span class="sd-settings-emoji">{{ d.emoji or '&#10084;&#65039;' }}</span>
                 <div class="sd-settings-info">
                     <div class="sd-settings-name">{{ d.occasion_name }}</div>
                     <div class="sd-settings-date">{{ d.display_date }}</div>
@@ -35,24 +74,90 @@
             <div class="sd-settings-actions">
                 <a href="{{ url_for('settings_date_edit', date_id=d.id) }}" class="btn btn-secondary btn-sm">Edit</a>
                 <form method="POST" action="{{ url_for('settings_date_delete', date_id=d.id) }}"
-                      onsubmit="return confirm('Delete &quot;{{ d.occasion_name }}&quot;? This will remove it from your timeline.');">
+                      onsubmit="return confirm('Delete &quot;{{ d.occasion_name }}&quot;?');">
                     <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--accent);">Delete</button>
                 </form>
             </div>
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div style="text-align: center; padding: 40px 0; color: var(--text-muted);">
-        <div style="font-size: 48px; margin-bottom: 12px;">📅</div>
-        <p>No special dates yet.</p>
-    </div>
     {% endif %}
 
-    <a href="{{ url_for('settings_date_add') }}" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
-        + Add New Special Date
-    </a>
+    <!-- Add Custom Date Inline Form -->
+    <div class="sd-add-custom-toggle" id="add-custom-toggle">
+        <button type="button" class="btn btn-secondary" style="width: 100%;"
+                onclick="showCustomForm()">+ Add Custom Date</button>
+    </div>
+
+    <div class="sd-add-form hidden" id="custom-form">
+        <div class="sd-add-form-title">Add Custom Date</div>
+        <form method="POST" action="{{ url_for('settings_date_custom_add') }}">
+            <label class="sd-form-label" style="margin-top: 0;">What's this date called?</label>
+            <input type="text" name="name" class="sd-form-input" maxlength="50" required
+                   placeholder='e.g. "First trip together"'>
+
+            <label class="sd-form-label">When was it?</label>
+            <input type="date" name="date_val" class="sd-form-input" required>
+
+            <label class="sd-form-label">Choose an emoji</label>
+            <div class="sd-emoji-picker">
+                {% for em in emoji_choices %}
+                <button type="button" class="sd-emoji-btn {% if em == '\u2764\ufe0f' %}selected{% endif %}"
+                        onclick="pickCustomEmoji(this, '{{ em }}')">{{ em }}</button>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="emoji" id="custom-emoji-hidden" value="&#10084;&#65039;">
+
+            <label class="sd-form-label">Remind every year?</label>
+            <div class="sd-recurring-toggle">
+                <label><input type="radio" name="recurring" value="1" checked> Yes (annual reminder)</label>
+                <label><input type="radio" name="recurring" value="0"> No (one-time date)</label>
+            </div>
+
+            <div class="sd-add-form-actions">
+                <button type="button" class="btn btn-ghost" onclick="hideCustomForm()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Date</button>
+            </div>
+        </form>
+    </div>
 
     <div style="height: 32px;"></div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleMilestoneDate(checkbox, msId) {
+    var wrap = document.getElementById('date-wrap-' + msId);
+    var item = checkbox.closest('.sd-milestone-item');
+    var dateInput = document.getElementById('date-' + msId);
+    if (checkbox.checked) {
+        wrap.classList.remove('hidden');
+        item.classList.add('sd-milestone-active');
+        dateInput.focus();
+    } else {
+        wrap.classList.add('hidden');
+        item.classList.remove('sd-milestone-active');
+        dateInput.value = '';
+    }
+}
+
+function showCustomForm() {
+    document.getElementById('custom-form').classList.remove('hidden');
+    document.getElementById('add-custom-toggle').classList.add('hidden');
+}
+
+function hideCustomForm() {
+    document.getElementById('custom-form').classList.add('hidden');
+    document.getElementById('add-custom-toggle').classList.remove('hidden');
+}
+
+function pickCustomEmoji(btn, emoji) {
+    document.querySelectorAll('#custom-form .sd-emoji-btn').forEach(function(b) {
+        b.classList.remove('selected');
+    });
+    btn.classList.add('selected');
+    document.getElementById('custom-emoji-hidden').value = emoji;
+}
+</script>
 {% endblock %}

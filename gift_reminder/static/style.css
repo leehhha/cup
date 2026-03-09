@@ -2273,6 +2273,91 @@ label {
     margin-top: 16px;
 }
 
+/* Structured milestone page */
+.sd-section-intro {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.sd-section-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.sd-milestone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sd-milestone-item {
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sd-milestone-item.sd-milestone-active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+.sd-milestone-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.sd-milestone-emoji {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.sd-milestone-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.sd-milestone-date-wrap {
+    margin-top: 12px;
+    padding-left: 36px;
+}
+
+.sd-milestone-date-wrap.hidden {
+    display: none;
+}
+
+.sd-milestone-date-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+}
+
+.sd-milestone-date-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.sd-add-custom-toggle {
+    margin-top: 12px;
+}
+
+.sd-add-custom-toggle.hidden {
+    display: none;
+}
+
 /* Settings dates list */
 .sd-settings-list {
     display: flex;

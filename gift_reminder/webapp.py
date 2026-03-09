@@ -14,6 +14,17 @@ from gift_reminder.gift_engine import GiftEngine
 from gift_reminder.occasions import build_carousel_data, build_timeline, occasion_to_json
 
 
+COMMON_MILESTONES = [
+    {"id": "wedding-anniversary", "emoji": "\U0001f48d", "label": "Wedding Anniversary"},
+    {"id": "dating-anniversary", "emoji": "\u2764\ufe0f", "label": "Dating Anniversary"},
+    {"id": "day-we-met", "emoji": "\U0001f495", "label": "Day We Met"},
+    {"id": "first-date", "emoji": "\U0001f339", "label": "First Date"},
+    {"id": "got-engaged", "emoji": "\U0001f48e", "label": "Got Engaged"},
+    {"id": "moved-in", "emoji": "\U0001f3e0", "label": "Moved In Together"},
+    {"id": "first-i-love-you", "emoji": "\U0001f497", "label": 'First "I Love You"'},
+]
+
+
 def create_app(db_path=None):
     app = Flask(
         __name__,
@@ -451,14 +462,19 @@ def create_app(db_path=None):
         return render_template("checkin3_complete.html")
 
     # ------------------------------------------------------------------
-    # Settings: Special Dates
+    # Settings: Special Dates (structured milestone experience)
     # ------------------------------------------------------------------
     @app.route("/settings/special-dates")
     def settings_dates():
         if not db.is_setup_complete():
             return redirect(url_for("index"))
+
         all_dates = db.get_all_special_dates()
         today = date.today()
+
+        # Build a lookup of existing common milestones by label
+        saved_common = {}
+        custom_dates = []
         for d in all_dates:
             # Build display date
             parsed = _parse_date_md(d["date_md"])
@@ -466,54 +482,100 @@ def create_app(db_path=None):
                 m, dy = parsed
                 if d.get("original_year"):
                     d["display_date"] = date(d["original_year"], m, min(dy, 28)).strftime("%B %-d, %Y")
+                    d["full_date"] = date(d["original_year"], m, min(dy, 28)).isoformat()
                 else:
                     d["display_date"] = date(today.year, m, min(dy, 28)).strftime("%B %-d")
+                    d["full_date"] = ""
             else:
                 d["display_date"] = d["date_md"]
+                d["full_date"] = ""
             # Anniversary text
             d["anniversary_text"] = ""
             if d.get("original_year") and d.get("recurring"):
                 years = today.year - d["original_year"]
                 if years > 0:
                     d["anniversary_text"] = f"{years} year{'s' if years != 1 else ''}"
-        return render_template("settings_dates.html", dates=all_dates)
 
-    @app.route("/settings/special-dates/add", methods=["GET", "POST"])
-    def settings_date_add():
+            # Check if this matches a common milestone by name
+            matched = False
+            for ms in COMMON_MILESTONES:
+                if d["occasion_name"].lower().replace(" ", "") == ms["label"].lower().replace(" ", ""):
+                    saved_common[ms["id"]] = d
+                    matched = True
+                    break
+            if not matched:
+                # Not a system-level date (birthday, anniversary, valentines, etc.)
+                if d.get("is_custom"):
+                    custom_dates.append(d)
+
+        return render_template(
+            "settings_dates.html",
+            milestones=COMMON_MILESTONES,
+            saved_common=saved_common,
+            custom_dates=custom_dates,
+            emoji_choices=_emoji_choices(),
+        )
+
+    @app.route("/settings/special-dates/save", methods=["POST"])
+    def settings_dates_save():
+        """Bulk save common milestones from checkboxes."""
         if not db.is_setup_complete():
             return redirect(url_for("index"))
 
-        if request.method == "POST":
-            name = request.form.get("name", "").strip()[:50]
-            date_val = request.form.get("date_val", "").strip()
-            emoji = request.form.get("emoji", "❤️").strip()
-            recurring = request.form.get("recurring", "1") == "1"
+        checked_ids = request.form.getlist("milestone_checked")
 
-            if not name or not date_val:
-                flash("Name and date are required.", "error")
-                return redirect(url_for("settings_date_add"))
+        for ms in COMMON_MILESTONES:
+            date_val = request.form.get(f"milestone_date_{ms['id']}", "").strip()
+            if ms["id"] in checked_ids and date_val:
+                try:
+                    d = date.fromisoformat(date_val)
+                    date_md = f"{d.month:02d}/{d.day:02d}"
+                    db.save_special_date(
+                        ms["label"], date_md, enabled=True,
+                        emoji=ms["emoji"], original_year=d.year,
+                        is_custom=True, recurring=True,
+                    )
+                except ValueError:
+                    continue
+            elif ms["id"] not in checked_ids:
+                # If unchecked, remove it if it exists
+                existing = db.get_all_special_dates()
+                for ex in existing:
+                    if ex["occasion_name"].lower().replace(" ", "") == ms["label"].lower().replace(" ", ""):
+                        db.delete_special_date(ex["id"])
+                        break
 
-            try:
-                d = date.fromisoformat(date_val)
-                date_md = f"{d.month:02d}/{d.day:02d}"
-                original_year = d.year
-            except ValueError:
-                flash("Invalid date format.", "error")
-                return redirect(url_for("settings_date_add"))
+        flash("Special dates saved!", "success")
+        return redirect(url_for("settings_dates"))
 
-            db.save_special_date(
-                name, date_md, enabled=True, emoji=emoji,
-                original_year=original_year, is_custom=True, recurring=recurring,
-            )
-            flash(f"Added \"{name}\"!", "success")
+    @app.route("/settings/special-dates/custom/add", methods=["POST"])
+    def settings_date_custom_add():
+        if not db.is_setup_complete():
+            return redirect(url_for("index"))
+
+        name = request.form.get("name", "").strip()[:50]
+        date_val = request.form.get("date_val", "").strip()
+        emoji = request.form.get("emoji", "\u2764\ufe0f").strip()
+        recurring = request.form.get("recurring", "1") == "1"
+
+        if not name or not date_val:
+            flash("Name and date are required.", "error")
             return redirect(url_for("settings_dates"))
 
-        return render_template(
-            "settings_date_form.html",
-            editing=False,
-            date_obj=None,
-            emoji_choices=_emoji_choices(),
+        try:
+            d = date.fromisoformat(date_val)
+            date_md = f"{d.month:02d}/{d.day:02d}"
+            original_year = d.year
+        except ValueError:
+            flash("Invalid date format.", "error")
+            return redirect(url_for("settings_dates"))
+
+        db.save_special_date(
+            name, date_md, enabled=True, emoji=emoji,
+            original_year=original_year, is_custom=True, recurring=recurring,
         )
+        flash(f"Added \"{name}\"!", "success")
+        return redirect(url_for("settings_dates"))
 
     @app.route("/settings/special-dates/<int:date_id>/edit", methods=["GET", "POST"])
     def settings_date_edit(date_id):
@@ -528,7 +590,7 @@ def create_app(db_path=None):
         if request.method == "POST":
             name = request.form.get("name", "").strip()[:50]
             date_val = request.form.get("date_val", "").strip()
-            emoji = request.form.get("emoji", "❤️").strip()
+            emoji = request.form.get("emoji", "\u2764\ufe0f").strip()
             recurring = request.form.get("recurring", "1") == "1"
 
             if not name or not date_val:
