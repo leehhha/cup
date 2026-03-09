@@ -93,8 +93,8 @@ def create_app(db_path=None):
     # ------------------------------------------------------------------
     # Timeline (new home screen)
     # ------------------------------------------------------------------
-    @app.route("/timeline")
-    @app.route("/dashboard")
+    @app.route("/timeline", endpoint="timeline")
+    @app.route("/dashboard", endpoint="dashboard")
     def timeline():
         if not db.is_setup_complete():
             return redirect(url_for("index"))
