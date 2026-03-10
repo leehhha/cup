@@ -43,7 +43,6 @@
     <!-- Action Buttons -->
     <div class="swipe-actions" id="swipe-actions">
         <button class="swipe-btn swipe-btn-skip" id="btn-skip" aria-label="Skip">&#10060;</button>
-        <div class="swipe-counter" id="card-counter">1 of 8</div>
         <button class="swipe-btn swipe-btn-pick" id="btn-pick" aria-label="Select">&#10084;&#65039;</button>
     </div>
 </div>
@@ -64,8 +63,8 @@
     var celebrationLinks = document.getElementById('celebration-links');
     var celebrationConfirm = document.getElementById('celebration-confirm');
     var celebrationContinue = document.getElementById('celebration-continue');
-    var counter = document.getElementById('card-counter');
     var actions = document.getElementById('swipe-actions');
+    var loadingMore = false;
     var stampSkip = document.getElementById('stamp-skip');
     var stampPick = document.getElementById('stamp-pick');
     var btnSkip = document.getElementById('btn-skip');
@@ -113,8 +112,18 @@
         stampPick.style.opacity = '0';
 
         if (currentIndex >= CARDS.length) {
-            deckEmpty.style.display = 'flex';
-            actions.style.display = 'none';
+            // Try to load more automatically
+            if (!loadingMore) {
+                fetchMoreCards(function() {
+                    if (currentIndex >= CARDS.length) {
+                        // Truly exhausted
+                        deckEmpty.style.display = 'flex';
+                        actions.style.display = 'none';
+                    } else {
+                        renderCard();
+                    }
+                });
+            }
             return;
         }
 
@@ -140,7 +149,11 @@
 
         deckInner.appendChild(card);
         cardEl = card;
-        counter.textContent = (currentIndex + 1) + ' of ' + CARDS.length;
+
+        // Infinite scroll: prefetch more cards when 3 away from end
+        if (!loadingMore && currentIndex >= CARDS.length - 3) {
+            fetchMoreCards();
+        }
 
         card.addEventListener('touchstart', onTouchStart, {passive: true});
         card.addEventListener('touchmove', onTouchMove, {passive: false});
@@ -282,11 +295,10 @@
         else if (e.key === 'ArrowRight') doPick();
     });
 
-    // Load more cards
-    document.getElementById('btn-load-more').addEventListener('click', function() {
-        var btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Loading...';
+    // Fetch more cards from the server (infinite scroll)
+    function fetchMoreCards(callback) {
+        if (loadingMore) return;
+        loadingMore = true;
 
         fetch('/api/occasion/' + OCC_ID + '/more-cards', {
             method: 'POST',
@@ -294,21 +306,33 @@
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
+            loadingMore = false;
             if (data.cards && data.cards.length > 0) {
-                // Append new cards and reset to first new one
-                var oldLen = CARDS.length;
                 CARDS = CARDS.concat(data.cards);
-                currentIndex = oldLen;
+            }
+            if (callback) callback();
+        })
+        .catch(function() {
+            loadingMore = false;
+            if (callback) callback();
+        });
+    }
+
+    // Manual load-more button (fallback if auto-fetch exhausts)
+    document.getElementById('btn-load-more').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+
+        fetchMoreCards(function() {
+            if (currentIndex < CARDS.length) {
                 deckEmpty.style.display = 'none';
                 actions.style.display = '';
                 renderCard();
             } else {
                 btn.textContent = 'No more ideas right now';
             }
-        })
-        .catch(function() {
             btn.disabled = false;
-            btn.textContent = 'Load More Ideas';
         });
     });
 
