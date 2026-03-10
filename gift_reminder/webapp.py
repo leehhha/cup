@@ -999,9 +999,14 @@ def _process_custom_dates_form(db, form):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=5000)
+    args = parser.parse_args()
+
     app = create_app()
-    print("\n  Gift Reminder is running at http://localhost:5000\n")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    print(f"\n  Gift Reminder is running at http://localhost:{args.port}\n")
+    app.run(host="0.0.0.0", port=args.port, debug=True)
 
 
 if __name__ == "__main__":
