@@ -1001,7 +1001,7 @@ def _process_custom_dates_form(db, form):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
     app = create_app()
