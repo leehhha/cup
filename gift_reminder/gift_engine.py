@@ -152,7 +152,9 @@ class GiftEngine:
         scored.sort(key=lambda x: x[0], reverse=True)
 
         # Pick from top candidates with some randomness
-        top_pool = scored[: max(count * 3, 10)]
+        # With 1000+ gifts, use a wider pool so each session feels fresh
+        pool_size = max(count * 8, min(len(scored), 60))
+        top_pool = scored[:pool_size]
         if len(top_pool) <= count:
             return [g for _, g in top_pool]
 
