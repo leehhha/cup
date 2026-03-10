@@ -23,10 +23,11 @@
         <div class="swipe-stamp swipe-stamp-pick" id="stamp-pick">PICK</div>
 
         <div class="swipe-empty" id="deck-empty" style="display:none">
-            <div class="swipe-empty-icon">&#127881;</div>
-            <h3>All caught up!</h3>
-            <p>You've reviewed all suggestions.</p>
-            <a href="{{ url_for('timeline') }}" class="btn btn-secondary mt-2">&#8592; Back to Timeline</a>
+            <div class="swipe-empty-icon">&#128260;</div>
+            <h3>Want more ideas?</h3>
+            <p>Load a fresh batch of personalized suggestions.</p>
+            <button class="btn btn-primary mt-2" id="btn-load-more">Load More Ideas</button>
+            <a href="{{ url_for('timeline') }}" class="btn btn-ghost mt-2">&#8592; Back to Timeline</a>
         </div>
 
         <!-- Selection confirmation overlay -->
@@ -279,6 +280,36 @@
         if (currentIndex >= CARDS.length) return;
         if (e.key === 'ArrowLeft') doSkip();
         else if (e.key === 'ArrowRight') doPick();
+    });
+
+    // Load more cards
+    document.getElementById('btn-load-more').addEventListener('click', function() {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+
+        fetch('/api/occasion/' + OCC_ID + '/more-cards', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.cards && data.cards.length > 0) {
+                // Append new cards and reset to first new one
+                var oldLen = CARDS.length;
+                CARDS = CARDS.concat(data.cards);
+                currentIndex = oldLen;
+                deckEmpty.style.display = 'none';
+                actions.style.display = '';
+                renderCard();
+            } else {
+                btn.textContent = 'No more ideas right now';
+            }
+        })
+        .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Load More Ideas';
+        });
     });
 
     renderCard();

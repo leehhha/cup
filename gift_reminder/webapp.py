@@ -173,11 +173,11 @@ def create_app(db_path=None):
         # Determine gift pool based on occasion type
         otype = occ["occasion_type"]
         if otype == "quarterly":
-            gifts = engine.suggest_quarterly_gifts(8)
+            gifts = engine.suggest_quarterly_gifts(12)
             pool_type = "quarterly"
         else:
             # monthly, birthday, anniversary, holidays all use monthly pool
-            gifts = engine.suggest_monthly_gifts(8)
+            gifts = engine.suggest_monthly_gifts(12)
             pool_type = "monthly"
 
         card_deck = _build_card_deck(gifts, pool_type)
@@ -248,6 +248,22 @@ def create_app(db_path=None):
             return redirect(url_for("timeline"))
         db.update_occasion_state(occ_id, "planning", gift_selected="", gift_purchase_link="")
         return redirect(url_for("occasion_select_gift", occ_id=occ_id))
+
+    @app.route("/api/occasion/<int:occ_id>/more-cards", methods=["POST"])
+    def occasion_more_cards(occ_id):
+        """Return a fresh batch of gift card suggestions (JSON)."""
+        occ = db.get_occasion(occ_id)
+        if not occ:
+            return jsonify(cards=[])
+
+        otype = occ["occasion_type"]
+        if otype == "quarterly":
+            gifts = engine.suggest_quarterly_gifts(8)
+        else:
+            gifts = engine.suggest_monthly_gifts(8)
+
+        deck = _build_card_deck(gifts, "quarterly" if otype == "quarterly" else "monthly")
+        return jsonify(cards=deck)
 
     # ------------------------------------------------------------------
     # Rating / Feedback
